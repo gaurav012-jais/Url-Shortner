@@ -37,9 +37,12 @@ export class CreateUrlDto {
   @IsOptional()
   @IsString()
   @MaxLength(100, { message: 'Custom domain cannot exceed 100 characters' })
-  @Matches(/^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(:\d{1,5})?$/, {
-    message: 'Custom domain must be a valid hostname (e.g. go.mycompany.com)',
-  })
+  @Matches(
+    /^(([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(:\d{1,5})?|localhost(:\d{1,5})?)$/,
+    {
+      message: 'Custom domain must be a valid hostname (e.g. zelnk-backend.onrender.com or go.mycompany.com)',
+    },
+  )
   domain?: string;
 
   @IsOptional()

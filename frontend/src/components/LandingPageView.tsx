@@ -36,7 +36,6 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       const res = await urlApi.shortenUrl({
         original_url: cleanUrl,
         custom_alias: customSlug.trim() || undefined,
-        domain: 'localhost:5000',
       });
       setCreatedUrl(res);
       onLinkCreated(res);

@@ -57,7 +57,6 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       const res = await urlApi.shortenUrl({
         original_url: clean,
         custom_alias: quickAlias.trim() || undefined,
-        domain: 'localhost:5000',
       });
       onLinkCreated(res);
       setQuickUrl('');

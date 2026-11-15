@@ -17,19 +17,28 @@ interface DomainEntry {
   isPrimary: boolean;
 }
 
+const getPlatformHost = (): string => {
+  const saved = localStorage.getItem('linkflow_preferred_domain');
+  if (saved && saved !== 'localhost:5000') return saved;
+  try {
+    const apiUrl = import.meta.env.VITE_API_BASE_URL;
+    if (apiUrl) return new URL(apiUrl).host;
+  } catch {}
+  return 'zelnk-backend.onrender.com';
+};
+
 export const SettingsView: React.FC<SettingsViewProps> = ({
   currentUser,
   onOpenAuth,
   onLogout,
   onNavigateToSubscription,
 }) => {
+  const platformHost = getPlatformHost();
   const [activeTab, setActiveTab] = useState<'profile' | 'domains' | 'api' | 'security'>('profile');
 
   // Profile & Preferences state
   const [workspaceName, setWorkspaceName] = useState('personal-prod');
-  const [defaultDomain, setDefaultDomain] = useState(() => {
-    return localStorage.getItem('linkflow_preferred_domain') || 'localhost:5000';
-  });
+  const [defaultDomain, setDefaultDomain] = useState(() => platformHost);
   const [autoFetchMetadata, setAutoFetchMetadata] = useState(true);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -92,9 +101,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [customDomains, setCustomDomains] = useState<DomainEntry[]>([
     {
       id: '1',
-      domain: 'localhost:5000',
+      domain: platformHost,
       status: 'active',
-      cname_target: 'Local Engine',
+      cname_target: 'Primary Engine',
       isPrimary: true,
     },
   ]);

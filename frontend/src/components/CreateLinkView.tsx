@@ -11,18 +11,29 @@ interface CreateLinkViewProps {
   onOpenAuth?: () => void;
 }
 
+const getPlatformDefaultDomain = (): string => {
+  const saved = localStorage.getItem('linkflow_preferred_domain');
+  if (saved && saved !== 'localhost:5000') return saved;
+  try {
+    const apiUrl = import.meta.env.VITE_API_BASE_URL;
+    if (apiUrl) {
+      return new URL(apiUrl).host;
+    }
+  } catch {}
+  return 'zelnk-backend.onrender.com';
+};
+
 export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
   onLinkCreated,
   onNavigateToLinks,
   currentUser,
   onOpenAuth,
 }) => {
+  const defaultPlatformDomain = getPlatformDefaultDomain();
   const [mode, setMode] = useState<'single' | 'bulk'>('single');
   const [protocol, setProtocol] = useState('https://');
   const [rawDestination, setRawDestination] = useState('');
-  const [customDomain, setCustomDomain] = useState(() => {
-    return localStorage.getItem('linkflow_preferred_domain') || 'localhost:5000';
-  });
+  const [customDomain, setCustomDomain] = useState(() => defaultPlatformDomain);
   const [customAlias, setCustomAlias] = useState('');
   const [title, setTitle] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -67,8 +78,9 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
   };
 
   const fullDestination = getFullDestinationUrl();
-  const activeDomain = customDomain.trim() || 'localhost:5000';
-  const liveShortUrl = `http://${activeDomain}/${customAlias.trim() || 'your-custom-name'}`;
+  const activeDomain = customDomain.trim() || defaultPlatformDomain;
+  const isLocal = activeDomain.includes('localhost');
+  const liveShortUrl = `${isLocal ? 'http://' : 'https://'}${activeDomain}/${customAlias.trim() || 'your-custom-name'}`;
 
   const handleDomainChange = (val: string) => {
     const clean = val.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
@@ -135,7 +147,10 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
     const payload: CreateUrlPayload = {
       original_url: finalDestination,
       custom_alias: customAlias.trim(),
-      domain: activeDomain,
+      domain:
+        activeDomain === defaultPlatformDomain || activeDomain === 'localhost:5000'
+          ? undefined
+          : activeDomain,
       tags: tags.length ? tags : undefined,
     };
 
@@ -210,7 +225,10 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
         return {
           original_url: url,
           custom_alias: parts[1] ? parts[1].toLowerCase().replace(/[^a-z0-9_-]/g, '') : undefined,
-          domain: activeDomain,
+          domain:
+        activeDomain === defaultPlatformDomain || activeDomain === 'localhost:5000'
+          ? undefined
+          : activeDomain,
         };
       });
   };
@@ -664,7 +682,9 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
                 {/* Quick Preset Domains */}
                 <div className="flex items-center gap-1.5 flex-wrap pt-1">
                   <span className="text-[11px] text-on-surface-variant">Domain Presets:</span>
-                  {['localhost:5000', 'gaurav.link', 'flow.to', 'brand.link'].map((preset) => (
+                  {[defaultPlatformDomain, 'gaurav.link', 'flow.to', 'brand.link']
+                    .filter((v, i, a) => a.indexOf(v) === i)
+                    .map((preset) => (
                     <button
                       key={preset}
                       type="button"

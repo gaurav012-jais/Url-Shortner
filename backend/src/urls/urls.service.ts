@@ -175,7 +175,17 @@ export class UrlsService implements OnModuleInit, OnModuleDestroy {
     }
 
     // Restrict custom branded domains to Pro/Enterprise/Admin
-    if (domain && domain.trim()) {
+    const defaultHost = (() => {
+      try {
+        return new URL(this.baseUrl).host.toLowerCase();
+      } catch {
+        return 'localhost:5000';
+      }
+    })();
+    const cleanDomain = domain ? domain.trim().toLowerCase().replace(/^https?:\/\//i, '').replace(/\/+$/, '') : null;
+    const isCustomBrandedDomain = !!(cleanDomain && cleanDomain !== defaultHost && cleanDomain !== 'localhost:5000' && cleanDomain !== 'localhost');
+
+    if (isCustomBrandedDomain) {
       if (!userId) {
         throw new ForbiddenException('Custom branded domains require a Pro or Enterprise subscription.');
       }
@@ -272,7 +282,7 @@ export class UrlsService implements OnModuleInit, OnModuleDestroy {
     const url = this.urlsRepository.create({
       original_url,
       short_code: shortCode,
-      domain: domain ? domain.trim() : null,
+      domain: isCustomBrandedDomain ? cleanDomain : null,
       tags: tags && tags.length ? tags : null,
       user_id: userId || null,
       guest_id: userId ? null : (guestId || null),
