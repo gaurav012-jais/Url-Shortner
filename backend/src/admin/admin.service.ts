@@ -96,7 +96,16 @@ export class AdminService implements OnModuleInit {
         }
         if (changed) {
           await this.usersRepo.save(adminCandidate);
-          this.logger.log(`⭐ Synced & Elevated .env admin account "${adminCandidate.email}" (${adminCandidate.name}) to ADMIN.`);
+          // Security: Revoke all existing sessions/tokens for this account so only someone with .env password can log in
+          try {
+            await this.usersRepo.query(
+              `UPDATE "refresh_tokens" SET "is_revoked" = true WHERE "user_id" = $1`,
+              [adminCandidate.id],
+            );
+          } catch {
+            // Non-fatal if table doesn't exist yet
+          }
+          this.logger.log(`⭐ Synced & Elevated .env admin account "${adminCandidate.email}" (${adminCandidate.name}) to ADMIN (All prior sessions revoked).`);
         } else {
           this.logger.log(`⭐ Master Admin account active: "${adminCandidate.email}" (Role: ADMIN, Plan: ENTERPRISE).`);
         }
