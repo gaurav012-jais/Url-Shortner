@@ -159,11 +159,12 @@ export class AdminService implements OnModuleInit {
 
   async updateSettings(dto: UpdateSettingsDto): Promise<SystemSetting> {
     let settings = await this.getSettings();
-    Object.assign(settings, dto);
+    const { id, updated_at, ...payload } = dto;
+    Object.assign(settings, payload);
     settings.updated_at = new Date();
     const updated = await this.settingsRepo.save(settings);
     this.cachedSettings = updated;
-    this.logger.log(`Platform settings updated: ${JSON.stringify(dto)}`);
+    this.logger.log(`Platform settings updated: ${JSON.stringify(payload)}`);
     return updated;
   }
 

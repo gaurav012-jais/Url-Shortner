@@ -2,6 +2,12 @@ import { IsOptional, IsInt, IsBoolean, Min, Max } from 'class-validator';
 
 export class UpdateSettingsDto {
   @IsOptional()
+  id?: string;
+
+  @IsOptional()
+  updated_at?: string | Date;
+
+  @IsOptional()
   @IsInt()
   @Min(0)
   @Max(1000000)

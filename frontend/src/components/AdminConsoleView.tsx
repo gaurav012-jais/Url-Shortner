@@ -120,11 +120,16 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
     e.preventDefault();
     try {
       setSavingSettings(true);
-      const updated = await adminApi.updateSettings(settings);
+      const { id, updated_at, ...cleanSettings } = settings;
+      const updated = await adminApi.updateSettings(cleanSettings);
       setSettings(updated);
       showToast('System configuration saved and active globally!');
     } catch (err: any) {
-      showToast(err?.response?.data?.message || 'Failed to save settings.');
+      const rawMsg = err?.response?.data?.message;
+      const msg = Array.isArray(rawMsg)
+        ? rawMsg.join(' • ')
+        : rawMsg || 'Failed to save settings.';
+      showToast(msg);
     } finally {
       setSavingSettings(false);
     }

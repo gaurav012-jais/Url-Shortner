@@ -8,7 +8,7 @@ export class HealthController {
   constructor(
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   @Get()
   async checkHealth(@Res() res: Response) {
