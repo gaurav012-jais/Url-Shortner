@@ -24,7 +24,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new Error('FATAL: JWT_ACCESS_SECRET is not set in environment. Server cannot start safely.');
     }
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (req: any) => req?.cookies?.access_token || null,
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ]),
       ignoreExpiration: false,
       secretOrKey: accessSecret,
     });

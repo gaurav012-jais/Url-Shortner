@@ -9,6 +9,7 @@ import {
   GoneException,
   NotFoundException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Response, Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -136,50 +137,13 @@ export class RedirectsController {
           );
         }
 
-        const queryPass = req.query.pass as string | undefined;
         const remainingAttempts = Math.max(0, 10 - (url.failed_password_attempts || 0));
 
-        // If no password provided in query, show the styled unlock form
-        if (!queryPass) {
-          return res.send(
-            this.renderPasswordPage(shortCode, undefined, remainingAttempts),
-          );
-        }
-
-        // 2. IP Rate Limiting Check (Anti-Brute Force)
-        const rateLimit = this.checkRateLimit(clientIp);
-        if (!rateLimit.allowed) {
-          return res
-            .status(HttpStatus.TOO_MANY_REQUESTS)
-            .send(this.renderRateLimitPage(rateLimit.retryAfterSeconds));
-        }
-
-        // 3. Compare Passcode
-        const isMatch = await bcrypt.compare(queryPass, url.password_hash);
-        if (!isMatch) {
-          const attemptResult = await this.urlsService.recordFailedPasswordAttempt(url.id);
-          if (attemptResult.isBlocked) {
-            return res.status(HttpStatus.GONE).send(
-              this.renderErrorPage(
-                'Link Locked (410)',
-                'Security Alert: This link has been permanently locked because 10 consecutive incorrect passcode attempts were recorded.',
-              ),
-            );
-          }
-
-          return res.send(
-            this.renderPasswordPage(
-              shortCode,
-              `Incorrect passcode. ${attemptResult.remainingAttempts} ${
-                attemptResult.remainingAttempts === 1 ? 'attempt' : 'attempts'
-              } remaining before this link is blocked.`,
-              attemptResult.remainingAttempts,
-            ),
-          );
-        }
-
-        // Sahi passcode provided: reset failed attempts counter
-        await this.urlsService.resetFailedPasswordAttempts(url.id);
+        // Passwords must NEVER be passed in URL query strings (prevents exposure in access logs, CDN logs, & Referer).
+        // Protected links always render the password challenge form; verification is handled via POST body.
+        return res.send(
+          this.renderPasswordPage(shortCode, undefined, remainingAttempts),
+        );
       }
 
       // Increment click count & record click telemetry
@@ -216,6 +180,8 @@ export class RedirectsController {
     }
   }
 
+  // Framework-level throttle: max 5 passcode submit requests per 60s per IP
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post(':shortCode')
   async handlePasswordSubmit(
     @Param('shortCode') shortCode: string,
@@ -223,6 +189,23 @@ export class RedirectsController {
     @Req() req: Request,
   ) {
     const clientIp = this.getClientIp(req);
+
+    // Validate Content-Type to prevent parser confusion
+    const contentType = (req.headers['content-type'] || '').toLowerCase();
+    const isAllowedContentType =
+      contentType.includes('application/x-www-form-urlencoded') ||
+      contentType.includes('application/json');
+
+    if (!isAllowedContentType) {
+      return res
+        .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+        .send(
+          this.renderErrorPage(
+            'Invalid Media Type (415)',
+            'Passcode submission must use application/x-www-form-urlencoded or application/json.',
+          ),
+        );
+    }
 
     try {
       // 1. Maintenance Mode Check
@@ -284,6 +267,17 @@ export class RedirectsController {
           : typeof rawBody?.pass === 'string'
           ? rawBody.pass
           : '';
+
+      // Prevent bcrypt CPU exhaustion from excessively long payloads
+      if (submittedPassword.length > 100) {
+        return res.status(HttpStatus.BAD_REQUEST).send(
+          this.renderPasswordPage(
+            shortCode,
+            'Passcode cannot exceed 100 characters.',
+            Math.max(0, 10 - (url.failed_password_attempts || 0)),
+          ),
+        );
+      }
       const isMatch = await bcrypt.compare(submittedPassword, url.password_hash);
 
       if (!isMatch) {

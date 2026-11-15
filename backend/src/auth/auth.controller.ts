@@ -10,9 +10,12 @@ import {
   UploadedFile,
   BadRequestException,
   Req,
+  Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
+import { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { memoryStorage } from 'multer';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -24,35 +27,93 @@ import { User } from '../users/entities/user.entity';
 
 @Controller('api/auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  private setAuthCookies(res: Response, accessToken: string, refreshToken?: string) {
+    const isProd = this.configService.get<string>('NODE_ENV') === 'production';
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
+      path: '/',
+    };
+
+    if (accessToken) {
+      res.cookie('access_token', accessToken, {
+        ...cookieOptions,
+        maxAge: 15 * 60 * 1000,
+      });
+    }
+
+    if (refreshToken) {
+      res.cookie('refresh_token', refreshToken, {
+        ...cookieOptions,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+    }
+  }
+
+  private clearAuthCookies(res: Response) {
+    const isProd = this.configService.get<string>('NODE_ENV') === 'production';
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
+      path: '/',
+    };
+    res.clearCookie('access_token', cookieOptions);
+    res.clearCookie('refresh_token', cookieOptions);
+  }
 
   // Rate limit on register: 5 attempts per 60s
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+  async register(
+    @Body() registerDto: RegisterDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.register(registerDto);
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    return result;
   }
 
   // Rate limit on login: 5 attempts per 60s
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.login(loginDto);
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    return result;
   }
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refreshTokens(@Body() refreshTokenDto: RefreshTokenDto) {
-    return this.authService.refreshTokens(refreshTokenDto);
+  async refreshTokens(
+    @Body() refreshTokenDto: RefreshTokenDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.refreshTokens(refreshTokenDto);
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    return result;
   }
 
   @SkipThrottle()
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@CurrentUser('id') userId: string) {
+  async logout(
+    @CurrentUser('id') userId: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    this.clearAuthCookies(res);
     return this.authService.logout(userId);
   }
 
