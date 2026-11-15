@@ -488,3 +488,4 @@ export async function downloadCleanQrPng(
   a.click();
   document.body.removeChild(a);
 }
+
