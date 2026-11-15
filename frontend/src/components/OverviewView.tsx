@@ -1,0 +1,436 @@
+import React, { useState, useEffect } from 'react';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from 'recharts';
+import { UrlItem, AnalyticsOverview } from '../types';
+import { analyticsApi, urlApi } from '../services/api';
+
+interface OverviewViewProps {
+  urls: UrlItem[];
+  onNavigateToLinks: () => void;
+  onOpenQr: (url: UrlItem) => void;
+  onOpenAnalytics?: (url: UrlItem) => void;
+  onLinkCreated: (link: UrlItem) => void;
+}
+
+export const OverviewView: React.FC<OverviewViewProps> = ({
+  urls,
+  onNavigateToLinks,
+  onOpenQr,
+  onOpenAnalytics,
+  onLinkCreated,
+}) => {
+  const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
+  const [quickUrl, setQuickUrl] = useState('');
+  const [quickAlias, setQuickAlias] = useState('');
+  const [loadingQuick, setLoadingQuick] = useState(false);
+  const [timeRange, setTimeRange] = useState<'24h' | '7D' | '30D'>('7D');
+
+  const fetchAnalytics = async () => {
+    try {
+      const res = await analyticsApi.getOverview();
+      setAnalytics(res);
+    } catch (err) {
+      console.error('Failed to load telemetry:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [urls]);
+
+  const handleQuickShorten = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickUrl.trim()) return;
+
+    let clean = quickUrl.trim();
+    if (!/^https?:\/\//i.test(clean)) clean = `https://${clean}`;
+
+    try {
+      setLoadingQuick(true);
+      const res = await urlApi.shortenUrl({
+        original_url: clean,
+        custom_alias: quickAlias.trim() || undefined,
+        domain: 'localhost:5000',
+      });
+      onLinkCreated(res);
+      setQuickUrl('');
+      setQuickAlias('');
+      fetchAnalytics();
+    } catch (err) {
+      console.error('Quick shorten failed:', err);
+    } finally {
+      setLoadingQuick(false);
+    }
+  };
+
+  const totalClicks = analytics?.totalClicks ?? urls.reduce((sum, u) => sum + u.clicks_count, 0);
+  const totalLinks = analytics?.totalLinks ?? urls.length;
+  const activeCount = analytics?.activeLinks ?? urls.filter((u) => u.is_active && !u.is_expired).length;
+  const activeRatio = totalLinks > 0 ? ((activeCount / totalLinks) * 100).toFixed(1) : '100.0';
+  const avgClicks = totalLinks > 0 ? (totalClicks / totalLinks).toFixed(1) : '0.0';
+
+  const chartData = analytics?.clickVolumeTrend || [
+    { date: 'Mon', clicks: 2 },
+    { date: 'Tue', clicks: 5 },
+    { date: 'Wed', clicks: 12 },
+    { date: 'Thu', clicks: 8 },
+    { date: 'Fri', clicks: 15 },
+    { date: 'Sat', clicks: 9 },
+    { date: 'Sun', clicks: totalClicks },
+  ];
+
+  return (
+    <div className="p-3 sm:p-5 lg:p-6 max-w-[1440px] mx-auto w-full flex flex-col gap-3.5 sm:gap-5">
+      {/* Top Quick Shortener Bar */}
+      <div className="bg-surface-container-lowest rounded-xl p-2.5 sm:p-3 shadow-sm border border-outline-variant/30">
+        <form onSubmit={handleQuickShorten} className="flex flex-col md:flex-row items-center gap-2">
+          <div className="hidden sm:flex items-center pl-2 text-outline pointer-events-none">
+            <span className="material-symbols-outlined text-[20px] text-primary">bolt</span>
+          </div>
+
+          <div className="flex-1 w-full flex items-center min-w-0 bg-surface-container-low sm:bg-transparent rounded-lg px-2 sm:px-0">
+            <span className="sm:hidden material-symbols-outlined text-[18px] text-primary mr-1.5">bolt</span>
+            <input
+              type="text"
+              value={quickUrl}
+              onChange={(e) => setQuickUrl(e.target.value)}
+              placeholder="Paste destination URL to quickly deploy..."
+              className="w-full bg-transparent py-2 text-xs font-code text-on-surface placeholder:text-outline outline-none"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 w-full md:w-auto shrink-0 justify-between sm:justify-end">
+            <div className="flex-1 sm:flex-initial flex items-center gap-1 px-2.5 py-1.5 bg-surface-container-low border border-outline-variant/30 rounded-lg text-xs font-code">
+              <span className="text-on-surface-variant font-bold">/</span>
+              <input
+                type="text"
+                value={quickAlias}
+                onChange={(e) => setQuickAlias(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+                placeholder="custom-name"
+                className="w-full sm:w-28 bg-transparent text-xs font-code text-on-surface font-semibold outline-none"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loadingQuick}
+              className="px-3.5 py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary text-xs font-semibold flex items-center gap-1.5 transition shadow-sm whitespace-nowrap active:scale-95 shrink-0"
+            >
+              {loadingQuick ? (
+                <div className="w-4 h-4 border-2 border-on-primary/30 border-t-on-primary rounded-full animate-spin"></div>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[16px]">link</span>
+                  <span>Shorten</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* 4-Grid KPI Stats: 2x2 on Mobile, 4-col on Desktop (Matching Phone Version) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        {/* Stat 1: Total Links */}
+        <div className="bg-surface-container-lowest rounded-xl p-3 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between active:scale-[0.99] transition">
+          <div className="flex items-center justify-between text-on-surface-variant">
+            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">
+              Total Links
+            </span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-[16px] sm:text-[18px]">hub</span>
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <div className="text-xl sm:text-2xl font-bold font-code text-on-surface tracking-tight">
+              {totalLinks}
+            </div>
+            <div className="flex items-center gap-1 mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-tertiary font-medium">
+              <span className="material-symbols-outlined text-[12px] sm:text-[14px]">arrow_upward</span>
+              <span>Registry</span>
+              <span className="hidden sm:inline text-on-surface-variant font-normal">&bull; Postgres</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Stat 2: Total Clicks */}
+        <div className="bg-surface-container-lowest rounded-xl p-3 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between active:scale-[0.99] transition">
+          <div className="flex items-center justify-between text-on-surface-variant">
+            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">
+              Total Clicks
+            </span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-tertiary">
+              <span className="material-symbols-outlined text-[16px] sm:text-[18px]">ads_click</span>
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <div className="text-xl sm:text-2xl font-bold font-code text-on-surface tracking-tight">
+              {totalClicks}
+            </div>
+            <div className="flex items-center gap-1 mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-tertiary font-medium">
+              <span className="material-symbols-outlined text-[12px] sm:text-[14px]">trending_up</span>
+              <span>Real-time</span>
+              <span className="hidden sm:inline text-on-surface-variant font-normal">&bull; 302 Edge</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Stat 3: Active Ratio */}
+        <div className="bg-surface-container-lowest rounded-xl p-3 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between active:scale-[0.99] transition">
+          <div className="flex items-center justify-between text-on-surface-variant">
+            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">
+              Active Ratio
+            </span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-[16px] sm:text-[18px]">verified</span>
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <div className="text-xl sm:text-2xl font-bold font-code text-on-surface tracking-tight">
+              {activeRatio}%
+            </div>
+            <div className="flex items-center gap-1 mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-on-surface-variant">
+              <span className="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+              <span className="font-semibold text-on-surface">{activeCount}</span>
+              <span>active</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Stat 4: Avg Clicks */}
+        <div className="bg-surface-container-lowest rounded-xl p-3 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between active:scale-[0.99] transition">
+          <div className="flex items-center justify-between text-on-surface-variant">
+            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">
+              Avg Clicks
+            </span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-[16px] sm:text-[18px]">bar_chart</span>
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <div className="text-xl sm:text-2xl font-bold font-code text-on-surface tracking-tight">
+              {avgClicks}
+            </div>
+            <div className="flex items-center gap-1 mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-tertiary font-medium">
+              <span className="material-symbols-outlined text-[12px] sm:text-[14px]">bolt</span>
+              <span>Efficiency</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Telemetry Area (Chart + Device Distribution) */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-6 items-start">
+        {/* Telemetry Chart (8 cols) */}
+        <div className="xl:col-span-8 bg-surface-container-lowest rounded-xl p-3.5 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-outline-variant/20">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-semibold text-xs sm:text-sm text-on-surface">Click Volume Telemetry</h2>
+                <span className="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-code text-[10px]">
+                  Real-time
+                </span>
+              </div>
+              <p className="text-[11px] text-on-surface-variant mt-0.5">
+                Aggregated interaction curves across all active routes
+              </p>
+            </div>
+
+            <div className="flex items-center bg-surface-container-low p-0.5 rounded-lg self-start border border-outline-variant/30 text-xs">
+              {(['24h', '7D', '30D'] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setTimeRange(r)}
+                  className={`px-2 py-0.5 rounded-md font-medium text-[11px] transition ${
+                    timeRange === r
+                      ? 'bg-surface-container-lowest text-primary shadow-sm font-semibold'
+                      : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Recharts Area Chart */}
+          <div className="h-52 sm:h-64 w-full pt-3">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="clickColor" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#4a40c1" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#4a40c1" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f8" />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#474554' }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#474554' }} tickLine={false} axisLine={false} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #c8c4d6',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  }}
+                  itemStyle={{ color: '#4a40c1', fontWeight: 600 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="clicks"
+                  stroke="#4a40c1"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#clickColor)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Device & Browser Distribution (4 cols) */}
+        <div className="xl:col-span-4 bg-surface-container-lowest rounded-xl p-3.5 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col gap-4">
+          <div>
+            <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20 mb-2.5">
+              <span className="text-xs font-semibold text-on-surface flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-primary">devices</span>
+                Device Split
+              </span>
+              <span className="text-[10px] text-on-surface-variant font-code">Live</span>
+            </div>
+
+            <div className="space-y-2">
+              {(analytics?.deviceDistribution || [
+                { name: 'Desktop', value: 70 },
+                { name: 'Mobile', value: 25 },
+                { name: 'Tablet', value: 5 },
+              ]).map((dev) => (
+                <div key={dev.name} className="space-y-1">
+                  <div className="flex justify-between text-xs text-on-surface font-medium">
+                    <span>{dev.name}</span>
+                    <span className="font-code text-on-surface-variant text-[11px]">{dev.value} clicks</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-surface-container-low overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, (dev.value / Math.max(1, totalClicks)) * 100 || 33)}%`,
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20 mb-2.5">
+              <span className="text-xs font-semibold text-on-surface flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-primary">public</span>
+                Browser Breakdown
+              </span>
+              <span className="text-[10px] text-on-surface-variant font-code">User-Agent</span>
+            </div>
+
+            <div className="space-y-2">
+              {(analytics?.browserDistribution || [
+                { name: 'Chrome', value: 60 },
+                { name: 'Safari', value: 25 },
+                { name: 'Firefox', value: 15 },
+              ]).map((br) => (
+                <div key={br.name} className="space-y-1">
+                  <div className="flex justify-between text-xs text-on-surface font-medium">
+                    <span>{br.name}</span>
+                    <span className="font-code text-on-surface-variant text-[11px]">{br.value}</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-surface-container-low overflow-hidden">
+                    <div
+                      className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, (br.value / Math.max(1, totalClicks)) * 100 || 25)}%`,
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Performing Routes */}
+      <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm p-3.5 sm:p-5 flex flex-col gap-3">
+        <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[18px]">history</span>
+            <h2 className="font-semibold text-xs sm:text-sm text-on-surface">Top Performing Routes</h2>
+          </div>
+          <button
+            onClick={onNavigateToLinks}
+            className="text-xs text-primary font-medium hover:underline flex items-center gap-0.5"
+          >
+            <span>View All ({urls.length})</span>
+            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          </button>
+        </div>
+
+        {urls.length === 0 ? (
+          <div className="py-6 text-center text-xs text-on-surface-variant">
+            No links deployed yet. Use the top bar to create your first route.
+          </div>
+        ) : (
+          <div className="divide-y divide-outline-variant/15">
+            {urls.slice(0, 5).map((link) => (
+              <div key={link.id} className="py-2.5 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold text-xs text-on-surface truncate">
+                    {link.title || link.short_code}
+                  </p>
+                  <p className="font-code text-xs text-primary font-bold">
+                    /{link.short_code}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="font-code text-[11px] text-on-surface font-semibold bg-surface-container px-2 py-0.5 rounded">
+                    {link.clicks_count} clicks
+                  </span>
+                  <button
+                    onClick={() => onOpenAnalytics?.(link)}
+                    className="p-1 rounded text-on-surface-variant hover:text-primary transition"
+                    title="Deep Analytics"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">query_stats</span>
+                  </button>
+                  <button
+                    onClick={() => onOpenQr(link)}
+                    className="p-1 rounded text-on-surface-variant hover:text-primary transition"
+                    title="QR Code"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">qr_code_2</span>
+                  </button>
+                  <a
+                    href={link.short_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1 rounded text-on-surface-variant hover:text-primary transition"
+                    title="Open Link"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
