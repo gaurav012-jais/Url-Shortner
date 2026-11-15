@@ -88,9 +88,15 @@ export class AdminService implements OnModuleInit {
           adminCandidate.plan = SubscriptionPlan.ENTERPRISE;
           changed = true;
         }
+        // Sync password if changed in .env so admin can always log in with .env credentials
+        const isPasswordMatch = await bcrypt.compare(adminPassword, adminCandidate.password_hash);
+        if (!isPasswordMatch) {
+          adminCandidate.password_hash = await bcrypt.hash(adminPassword, 10);
+          changed = true;
+        }
         if (changed) {
           await this.usersRepo.save(adminCandidate);
-          this.logger.log(`⭐ Elevated .env admin account "${adminCandidate.email}" (${adminCandidate.name}) to ADMIN.`);
+          this.logger.log(`⭐ Synced & Elevated .env admin account "${adminCandidate.email}" (${adminCandidate.name}) to ADMIN.`);
         } else {
           this.logger.log(`⭐ Master Admin account active: "${adminCandidate.email}" (Role: ADMIN, Plan: ENTERPRISE).`);
         }
