@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { QRCodeSVG } from 'qrcode.react';
 import { CreateUrlPayload, UrlItem, BulkCreateResponse, User, PublicTierLimits } from '../types';
 import { urlApi, adminApi } from '../services/api';
+import { downloadQrStandeePng, downloadCleanQrPng } from '../utils/qr-poster-generator.util';
 
 interface CreateLinkViewProps {
   onLinkCreated: (link: UrlItem) => void;
@@ -193,24 +194,33 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleDownloadQr = () => {
-    const svg = document.getElementById('preview-qr-code');
+  const handleDownloadQr = async () => {
+    const svg = document.getElementById('preview-qr-code') as unknown as SVGElement;
     if (!svg) return;
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx?.drawImage(img, 0, 0);
-      const pngFile = canvas.toDataURL('image/png');
-      const downloadLink = document.createElement('a');
-      downloadLink.download = `qrcode-${customAlias || 'link'}.png`;
-      downloadLink.href = pngFile;
-      downloadLink.click();
-    };
-    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+    try {
+      await downloadQrStandeePng(
+        svg,
+        {
+          shortUrl: liveShortUrl,
+          shortCode: customAlias || 'link',
+          title: title.trim() || undefined,
+          theme: 'purple',
+        },
+        `zelnk-standee-${customAlias || 'link'}.png`,
+      );
+    } catch (err) {
+      console.error('Failed to download standee poster:', err);
+    }
+  };
+
+  const handleDownloadCleanQr = async () => {
+    const svg = document.getElementById('preview-qr-code') as unknown as SVGElement;
+    if (!svg) return;
+    try {
+      await downloadCleanQrPng(svg, customAlias || 'link', true);
+    } catch (err) {
+      console.error('Failed to download clean QR:', err);
+    }
   };
 
   const parseBulkLines = () => {
@@ -1023,28 +1033,50 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
                 <span className="text-[10px] text-outline font-code">PNG ready</span>
               </div>
 
-              <div className="p-4 bg-white rounded-xl border border-outline-variant/30 shadow-inner flex items-center justify-center">
-                <QRCodeSVG
-                  id="preview-qr-code"
-                  value={liveShortUrl}
-                  size={160}
-                  level="M"
-                  includeMargin={false}
-                />
+              <div className="relative p-3.5 bg-white rounded-xl border border-outline-variant/30 shadow-inner flex items-center justify-center">
+                {/* 4 Corner Camera Brackets */}
+                <span className="absolute top-1.5 left-1.5 w-3.5 h-3.5 border-t-2 border-l-2 border-primary rounded-tl-sm" />
+                <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 border-t-2 border-r-2 border-primary rounded-tr-sm" />
+                <span className="absolute bottom-1.5 left-1.5 w-3.5 h-3.5 border-b-2 border-l-2 border-primary rounded-bl-sm" />
+                <span className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 border-b-2 border-r-2 border-primary rounded-br-sm" />
+
+                <div className="relative flex items-center justify-center">
+                  <QRCodeSVG
+                    id="preview-qr-code"
+                    value={liveShortUrl}
+                    size={160}
+                    level="H"
+                    includeMargin={false}
+                  />
+                  {/* Center Brand Badge */}
+                  <div className="absolute inset-0 m-auto w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center border border-slate-200">
+                    <span className="text-[14px]">⚡</span>
+                  </div>
+                </div>
               </div>
 
               <p className="text-[11px] text-on-surface-variant max-w-xs">
-                This QR code immediately points to your custom link <strong className="font-code text-on-surface">/{customAlias || 'custom-name'}</strong>.
+                This QR code points to your link <strong className="font-code text-on-surface">/{customAlias || 'custom-name'}</strong> with instant 302 routing.
               </p>
 
-              <button
-                type="button"
-                onClick={handleDownloadQr}
-                className="w-full py-2 px-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface text-xs font-medium transition flex items-center justify-center gap-1.5 border border-outline-variant/30"
-              >
-                <span className="material-symbols-outlined text-[16px]">download</span>
-                <span>Download High-Res PNG</span>
-              </button>
+              <div className="w-full flex flex-col gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleDownloadQr}
+                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm hover:shadow"
+                >
+                  <span className="material-symbols-outlined text-[17px]">style</span>
+                  <span>Download Standee Poster (PNG)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadCleanQr}
+                  className="w-full py-1.5 px-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface text-xs font-medium transition flex items-center justify-center gap-1.5 border border-outline-variant/30"
+                >
+                  <span className="material-symbols-outlined text-[15px]">crop_free</span>
+                  <span>Plain QR Code</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
