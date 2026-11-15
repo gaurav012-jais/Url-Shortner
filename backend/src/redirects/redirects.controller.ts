@@ -31,8 +31,9 @@ export class RedirectsController {
     private readonly configService: ConfigService,
     private readonly adminService: AdminService,
   ) {
-    this.frontendUrl =
+    const rawFrontend =
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    this.frontendUrl = rawFrontend.split(',')[0].trim();
   }
 
   private checkRateLimit(ip: string): { allowed: boolean; retryAfterSeconds: number } {
