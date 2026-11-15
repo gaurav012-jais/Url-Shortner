@@ -10,9 +10,10 @@ export const getDatabaseConfig = (
   configService: ConfigService,
 ): TypeOrmModuleOptions => {
   const isProduction = configService.get<string>('NODE_ENV') === 'production';
-  const databaseUrl = configService.get<string>('DATABASE_URL');
+  const databaseUrl = configService.get<string>('DATABASE_URL') || configService.get<string>('DB_URL');
   const dbSsl = configService.get<string>('DB_SSL');
-  const useSsl = dbSsl === 'true' || (isProduction && dbSsl !== 'false');
+  const isCloudDb = databaseUrl && (databaseUrl.includes('supabase.co') || databaseUrl.includes('neon.tech') || databaseUrl.includes('pooler'));
+  const useSsl = dbSsl === 'true' || isCloudDb || (isProduction && dbSsl !== 'false');
 
   const baseConfig: TypeOrmModuleOptions = {
     type: 'postgres',
