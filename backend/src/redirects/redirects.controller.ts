@@ -66,12 +66,9 @@ export class RedirectsController {
   }
 
   private getClientIp(req: Request): string {
-    // VULN-07 FIX: Use the RIGHTMOST IP in X-Forwarded-For (can't be spoofed when behind a trusted proxy)
-    // If not behind a proxy, use req.ip directly (which is the actual socket address)
     const forwarded = req.headers['x-forwarded-for'] as string | undefined;
     if (forwarded) {
       const ips = forwarded.split(',').map((s) => s.trim()).filter(Boolean);
-      // Use the last IP — this is the one added by YOUR proxy, not the client
       return ips[ips.length - 1] || req.ip || req.socket?.remoteAddress || '127.0.0.1';
     }
     return req.ip || req.socket?.remoteAddress || '127.0.0.1';
@@ -279,7 +276,6 @@ export class RedirectsController {
           .send(this.renderRateLimitPage(rateLimit.retryAfterSeconds));
       }
 
-      // VULN-22 FIX: Type check password to prevent type confusion or object injection
       const rawBody = req.body;
       const submittedPassword =
         typeof rawBody?.password === 'string'
@@ -632,7 +628,6 @@ export class RedirectsController {
   }
 
   private renderErrorPage(title: string, message: string): string {
-    // VULN-04 FIX: HTML-escape all dynamic content to prevent XSS
     const esc = (s: string) =>
       s.replace(/&/g, '&amp;')
        .replace(/</g, '&lt;')

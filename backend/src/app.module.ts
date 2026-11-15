@@ -23,13 +23,11 @@ import { HealthController } from './health/health.controller';
       inject: [ConfigService],
       useFactory: getDatabaseConfig,
     }),
-    // VULN-06 FIX: Global rate limiting — 100 requests per 60 seconds per IP by default
-    // Auth routes will override with stricter limits via @Throttle() decorator
     ThrottlerModule.forRoot([
       {
         name: 'default',
-        ttl: 60000,   // 60 seconds window
-        limit: 100,   // max 100 requests per window (global default)
+        ttl: 60000,
+        limit: 100,
       },
     ]),
     UrlsModule,

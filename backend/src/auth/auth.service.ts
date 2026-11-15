@@ -102,7 +102,6 @@ export class AuthService {
     const { refreshToken } = refreshTokenDto;
 
     try {
-      // VULN-01 FIX: No hardcoded fallback — throw if env var missing
       const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
       if (!refreshSecret) {
         throw new Error('FATAL: JWT_REFRESH_SECRET is not set in environment.');
@@ -187,7 +186,6 @@ export class AuthService {
       role: user.role,
     };
 
-    // VULN-01 FIX: No hardcoded fallback — throw if env var missing
     const accessSecret = this.configService.get<string>('JWT_ACCESS_SECRET');
     if (!accessSecret) {
       throw new Error('FATAL: JWT_ACCESS_SECRET is not set in environment.');

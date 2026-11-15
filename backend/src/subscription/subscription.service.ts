@@ -191,9 +191,7 @@ export class SubscriptionService {
       throw new NotFoundException('User not found.');
     }
 
-    // VULN-23 FIX: Subscription upgrade now only allowed for downgrade-to-free (no payment gateway).
-    // Upgrading to paid plans is disabled until a real payment provider is integrated.
-    // This prevents any authenticated user from promoting themselves to Pro/Enterprise for free.
+    // Plan upgrade validation: paid plans require an external billing checkout flow
     if (dto.plan !== 'free') {
       return {
         success: false,

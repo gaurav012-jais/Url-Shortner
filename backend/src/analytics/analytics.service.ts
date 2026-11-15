@@ -202,8 +202,7 @@ export class AnalyticsService {
       throw new NotFoundException(`URL with ID "${urlId}" not found`);
     }
 
-    // VULN-11 FIX: Unauthenticated users (userId === undefined) must NOT access any URL analytics.
-    // Admin can access all; authenticated user can only access their own URLs.
+    // Ownership check: Admin can access all; users can only access their own
     if (!userId) {
       throw new ForbiddenException('Authentication required to access analytics');
     }

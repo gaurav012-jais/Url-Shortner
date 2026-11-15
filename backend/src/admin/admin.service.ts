@@ -64,15 +64,16 @@ export class AdminService implements OnModuleInit {
 
     await this.loadOrInitSettings();
 
-    // Provision or sync Master Admin from .env credentials
+    // Provision or sync Master Admin strictly from .env credentials
     try {
-      const adminEmail = (
-        this.configService.get<string>('ADMIN_EMAIL') || 'admin@zelnk.local'
-      ).toLowerCase().trim();
-      const adminPassword =
-        this.configService.get<string>('ADMIN_PASSWORD') || 'Admin@123456';
-      const adminName =
-        this.configService.get<string>('ADMIN_NAME') || 'Super Admin';
+      const adminEmail = this.configService.get<string>('ADMIN_EMAIL')?.toLowerCase()?.trim();
+      const adminPassword = this.configService.get<string>('ADMIN_PASSWORD');
+      const adminName = this.configService.get<string>('ADMIN_NAME')?.trim() || 'Admin';
+
+      if (!adminEmail || !adminPassword) {
+        this.logger.log('ADMIN_EMAIL or ADMIN_PASSWORD not configured in environment. Skipping admin provisioning.');
+        return;
+      }
 
       let adminCandidate = await this.usersRepo.findOne({
         where: { email: adminEmail },
@@ -96,7 +97,7 @@ export class AdminService implements OnModuleInit {
         }
         if (changed) {
           await this.usersRepo.save(adminCandidate);
-          // Security: Revoke all existing sessions/tokens for this account so only someone with .env password can log in
+          // Revoke all existing sessions/tokens for this account so only someone with .env password can log in
           try {
             await this.usersRepo.query(
               `UPDATE "refresh_tokens" SET "is_revoked" = true WHERE "user_id" = $1`,
@@ -122,9 +123,6 @@ export class AdminService implements OnModuleInit {
         await this.usersRepo.save(newAdmin);
         this.logger.log(`🚀 Provisioned new Master Admin account from .env: "${adminEmail}" (Role: ADMIN, Plan: ENTERPRISE).`);
       }
-
-      // VULN-09 FIX: Removed hardcoded username backdoor ("gaurav1").
-      // Admin provisioning is ONLY done via ADMIN_EMAIL in .env.
     } catch (err: any) {
       this.logger.error(`Failed to sync admin account: ${err?.message}`);
     }

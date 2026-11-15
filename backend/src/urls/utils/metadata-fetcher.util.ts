@@ -1,4 +1,4 @@
-// VULN-03 FIX: SSRF protection — block private/internal IP ranges
+// Block private/internal IP ranges (SSRF protection)
 function isPrivateUrl(url: string): boolean {
   try {
     const parsed = new URL(url);

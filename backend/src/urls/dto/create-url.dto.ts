@@ -19,7 +19,6 @@ export class CreateUrlDto {
       protocols: ['http', 'https'],
       require_protocol: true,
       require_valid_protocol: true,
-      // VULN-03 partial fix: also block localhost at DTO level
       allow_underscores: false,
     },
     { message: 'Original URL must be a valid HTTP or HTTPS URL' },
@@ -35,7 +34,6 @@ export class CreateUrlDto {
   })
   custom_alias?: string;
 
-  // VULN-13 FIX: Validate domain is a proper hostname format, block javascript:, data:, etc.
   @IsOptional()
   @IsString()
   @MaxLength(100, { message: 'Custom domain cannot exceed 100 characters' })
@@ -44,7 +42,6 @@ export class CreateUrlDto {
   })
   domain?: string;
 
-  // VULN-15 FIX: Limit tags array size and individual tag length
   @IsOptional()
   @IsArray({ message: 'Tags must be an array of strings' })
   @ArrayMaxSize(20, { message: 'Maximum 20 tags allowed per URL' })

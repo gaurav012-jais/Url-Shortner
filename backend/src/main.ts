@@ -13,8 +13,7 @@ async function bootstrap() {
   const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
   const isProd = configService.get<string>('NODE_ENV') === 'production';
 
-  // VULN-19 FIX: Apply Helmet for standard HTTP security headers
-  // (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, etc.)
+  // HTTP security headers
   app.use(
     helmet({
       contentSecurityPolicy: isProd

@@ -28,7 +28,6 @@ export class HealthController {
 
     const isHealthy = isDbConnected && dbPing;
 
-    // VULN-12 FIX: In production, return minimal response — no env/uptime/db details
     if (env === 'production') {
       return res
         .status(isHealthy ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE)

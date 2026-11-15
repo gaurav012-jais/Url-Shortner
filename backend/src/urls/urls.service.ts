@@ -174,7 +174,7 @@ export class UrlsService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    // VULN-05 & VULN-13 FIX: Restrict custom branded domains to Pro/Enterprise/Admin
+    // Restrict custom branded domains to Pro/Enterprise/Admin
     if (domain && domain.trim()) {
       if (!userId) {
         throw new ForbiddenException('Custom branded domains require a Pro or Enterprise subscription.');
@@ -540,7 +540,7 @@ export class UrlsService implements OnModuleInit, OnModuleDestroy {
     userId: string,
   ): Promise<{ claimed: number }> {
     if (!guestId || !userId) return { claimed: 0 };
-    // VULN-17 FIX: Validate guestId format strictly (prevent arbitrary / wildcards)
+    // Validate guestId format strictly
     if (!/^guest_[a-zA-Z0-9_-]{8,64}$/.test(guestId)) {
       return { claimed: 0 };
     }
@@ -580,7 +580,6 @@ export class UrlsService implements OnModuleInit, OnModuleDestroy {
     includeQr = false,
   ): Promise<UrlResponseDto> {
     let baseUrlToUse = this.baseUrl;
-    // VULN-05 FIX: Safely parse and restrict domain protocol to http/https
     if (url.domain) {
       const cleanDomain = url.domain.trim().replace(/[\r\n\t]/g, '');
       try {

@@ -26,7 +26,7 @@ import { User } from '../users/entities/user.entity';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // VULN-06 FIX: Strict rate limiting on register — 5 attempts per 60 seconds per IP
+  // Rate limit on register: 5 attempts per 60s
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -34,7 +34,7 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
-  // VULN-06 FIX: Strict rate limiting on login — 5 attempts per 60 seconds per IP
+  // Rate limit on login: 5 attempts per 60s
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)

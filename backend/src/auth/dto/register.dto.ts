@@ -11,7 +11,6 @@ export class RegisterDto {
   @IsEmail({}, { message: 'Please provide a valid email address' })
   email: string;
 
-  // VULN-10 FIX: Stronger password policy — min 8 chars, uppercase, lowercase, digit
   @IsNotEmpty({ message: 'Password is required' })
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })

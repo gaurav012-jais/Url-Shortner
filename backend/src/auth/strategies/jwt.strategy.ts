@@ -19,7 +19,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
   ) {
-    // VULN-01 FIX: Throw fatal error if JWT secret is missing — no hardcoded fallback
     const accessSecret = configService.get<string>('JWT_ACCESS_SECRET');
     if (!accessSecret) {
       throw new Error('FATAL: JWT_ACCESS_SECRET is not set in environment. Server cannot start safely.');
