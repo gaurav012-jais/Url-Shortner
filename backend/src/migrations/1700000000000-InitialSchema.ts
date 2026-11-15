@@ -12,6 +12,10 @@ export class InitialSchema1700000000000 implements MigrationInterface {
         "password_hash" character varying(255) NOT NULL,
         "name" character varying(100) NOT NULL,
         "role" character varying(20) NOT NULL DEFAULT 'user',
+        "plan" character varying(50) NOT NULL DEFAULT 'free',
+        "plan_expires_at" TIMESTAMP WITH TIME ZONE,
+        "profile_picture_url" character varying(500),
+        "is_active" boolean NOT NULL DEFAULT true,
         "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
         "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
         CONSTRAINT "UQ_users_email" UNIQUE ("email"),
@@ -24,6 +28,7 @@ export class InitialSchema1700000000000 implements MigrationInterface {
       CREATE TABLE IF NOT EXISTS "urls" (
         "id" uuid NOT NULL DEFAULT gen_random_uuid(),
         "user_id" uuid,
+        "guest_id" character varying(64),
         "original_url" text NOT NULL,
         "short_code" character varying(30) NOT NULL,
         "domain" character varying(100),
@@ -34,6 +39,7 @@ export class InitialSchema1700000000000 implements MigrationInterface {
         "is_active" boolean NOT NULL DEFAULT true,
         "clicks_count" integer NOT NULL DEFAULT 0,
         "max_clicks" integer,
+        "failed_password_attempts" integer NOT NULL DEFAULT 0,
         "expires_at" TIMESTAMP WITH TIME ZONE,
         "password_hash" character varying(255),
         "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -89,9 +95,25 @@ export class InitialSchema1700000000000 implements MigrationInterface {
     await queryRunner.query(`
       CREATE INDEX IF NOT EXISTS "idx_clicks_created_at" ON "clicks" ("created_at")
     `);
+
+    // 5. System Settings Table
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS "system_settings" (
+        "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+        "free_tier_max_clicks" integer NOT NULL DEFAULT 100,
+        "allow_guest_passwords" boolean NOT NULL DEFAULT false,
+        "free_user_max_password_links" integer NOT NULL DEFAULT 5,
+        "guest_expiration_minutes" integer NOT NULL DEFAULT 15,
+        "allow_custom_alias_free" boolean NOT NULL DEFAULT true,
+        "maintenance_mode" boolean NOT NULL DEFAULT false,
+        "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+        CONSTRAINT "PK_system_settings_id" PRIMARY KEY ("id")
+      )
+    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP TABLE IF EXISTS "system_settings"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "clicks"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "refresh_tokens"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "urls"`);
