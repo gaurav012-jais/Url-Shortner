@@ -7,6 +7,8 @@ interface SettingsViewProps {
   onOpenAuth: () => void;
   onLogout: () => void;
   onNavigateToSubscription?: () => void;
+  workspaceName?: string;
+  onWorkspaceNameChange?: (name: string) => void;
 }
 
 interface DomainEntry {
@@ -37,12 +39,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onOpenAuth,
   onLogout,
   onNavigateToSubscription,
+  workspaceName: propWorkspaceName,
+  onWorkspaceNameChange,
 }) => {
   const platformHost = getPlatformHost();
   const [activeTab, setActiveTab] = useState<'profile' | 'domains' | 'api' | 'security'>('profile');
 
   // Profile & Preferences state
-  const [workspaceName, setWorkspaceName] = useState('personal-prod');
+  const [workspaceName, setWorkspaceName] = useState(() => {
+    return propWorkspaceName || localStorage.getItem('zelnk_workspace_name') || 'personal-prod';
+  });
   const [defaultDomain, setDefaultDomain] = useState(() => platformHost);
   const [autoFetchMetadata, setAutoFetchMetadata] = useState(true);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -125,7 +131,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const handleSavePreferences = (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanWorkspace = workspaceName.trim() || 'personal-prod';
+    localStorage.setItem('zelnk_workspace_name', cleanWorkspace);
     localStorage.setItem('linkflow_preferred_domain', defaultDomain.trim());
+    if (onWorkspaceNameChange) {
+      onWorkspaceNameChange(cleanWorkspace);
+    }
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 2500);
   };
@@ -225,7 +236,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <input
                   type="text"
                   value={workspaceName}
-                  onChange={(e) => setWorkspaceName(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setWorkspaceName(val);
+                    if (onWorkspaceNameChange) {
+                      onWorkspaceNameChange(val);
+                    }
+                  }}
+                  placeholder="e.g. personal-prod, marketing"
                   className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-3 py-2 text-xs font-medium text-on-surface outline-none focus:border-primary"
                 />
               </div>
@@ -235,12 +253,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   Default Short Domain Prefix
                 </label>
                 <div className="flex items-center bg-surface-container-low border border-outline-variant/30 rounded-xl px-3 py-2 text-xs">
-                  <span className="text-on-surface-variant mr-1">http://</span>
+                  <span className="text-on-surface-variant mr-1">
+                    {defaultDomain.includes('localhost') ? 'http://' : 'https://'}
+                  </span>
                   <input
                     type="text"
                     value={defaultDomain}
                     onChange={(e) => setDefaultDomain(e.target.value)}
-                    placeholder="localhost:5000"
+                    placeholder="zelnk.onrender.com"
                     className="w-full bg-transparent font-code text-on-surface outline-none"
                   />
                 </div>

@@ -18,6 +18,9 @@ import { urlApi, authApi } from './services/api';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('create-link');
+  const [workspaceName, setWorkspaceName] = useState(() => {
+    return localStorage.getItem('zelnk_workspace_name') || 'personal-prod';
+  });
   const [urls, setUrls] = useState<UrlItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -161,6 +164,7 @@ export const App: React.FC = () => {
         isOpenMobile={isMobileNavOpen}
         onCloseMobile={() => setIsMobileNavOpen(false)}
         isAdmin={currentUser?.role === 'admin'}
+        workspaceName={workspaceName}
       />
 
       <div className="pl-0 lg:pl-64 flex flex-col min-h-screen pb-16 lg:pb-0">
@@ -393,6 +397,8 @@ export const App: React.FC = () => {
               onOpenAuth={() => setIsAuthModalOpen(true)}
               onLogout={handleLogout}
               onNavigateToSubscription={() => setActiveTab('subscription')}
+              workspaceName={workspaceName}
+              onWorkspaceNameChange={setWorkspaceName}
             />
           )}
 

@@ -8,6 +8,7 @@ interface SidebarProps {
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
   isAdmin?: boolean;
+  workspaceName?: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -16,6 +17,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpenMobile = false,
   onCloseMobile,
   isAdmin = false,
+  workspaceName = 'personal-prod',
 }) => {
   const baseNavItems = [
     { id: 'overview', label: 'Overview', icon: 'space_dashboard' },
@@ -64,9 +66,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-surface-container-low border border-outline-variant/30 hover:border-outline-variant transition-colors cursor-pointer">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-5 h-5 rounded bg-primary text-on-primary flex items-center justify-center text-[10px] font-code font-bold shrink-0">
-                P
+                {(workspaceName || 'P').trim().charAt(0).toUpperCase()}
               </div>
-              <span className="text-xs text-on-surface font-semibold truncate">personal-prod</span>
+              <span className="text-xs text-on-surface font-semibold truncate" title={workspaceName || 'personal-prod'}>
+                {workspaceName || 'personal-prod'}
+              </span>
             </div>
             <span className="material-symbols-outlined text-on-surface-variant text-[16px] shrink-0">
               unfold_more
