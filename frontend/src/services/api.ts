@@ -18,7 +18,7 @@ import {
   UserSubscriptionInfo,
 } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://zelnk.onrender.com';
 
 export function getOrCreateGuestId(): string {
   let gid = localStorage.getItem('linkflow_guest_id');

@@ -20,18 +20,23 @@ interface DomainEntry {
 }
 
 const getPlatformHost = (): string => {
-  const isLocal =
-    typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1' ||
-      window.location.hostname.includes('192.168.'));
   const saved = localStorage.getItem('linkflow_preferred_domain');
-  if (saved) return saved;
+  if (saved && !saved.includes('localhost') && !saved.includes('127.0.0.1')) {
+    return saved;
+  }
+  if (saved) {
+    localStorage.removeItem('linkflow_preferred_domain');
+  }
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    if (apiUrl) return new URL(apiUrl).host;
+    if (apiUrl) {
+      const parsed = new URL(apiUrl).host;
+      if (!parsed.includes('localhost') && !parsed.includes('127.0.0.1')) {
+        return parsed;
+      }
+    }
   } catch {}
-  return isLocal ? 'localhost:5000' : 'zelnk.onrender.com';
+  return 'zelnk.onrender.com';
 };
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -176,7 +181,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   return (
-    <div className="p-3 sm:p-5 lg:p-6 w-full max-w-[1440px] mx-auto flex flex-col gap-5 flex-1 animate-fade-in">
+    <div className="p-3 sm:p-5 lg:p-6 w-full max-w-[1440px] mx-auto flex flex-col gap-5 flex-1 animate-screen">
       {/* Page Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-xl sm:text-2xl font-bold text-on-surface tracking-tight">
@@ -718,7 +723,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     Create Custom Short Link
                   </p>
                   <pre className="p-3.5 rounded-xl bg-surface-container-low font-code text-xs text-on-surface overflow-x-auto border border-outline-variant/20 leading-relaxed">
-{`curl -X POST http://localhost:5000/api/urls \\
+{`curl -X POST https://zelnk.onrender.com/api/urls \\
   -H "Authorization: Bearer ${apiKey}" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -731,7 +736,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     Retrieve Link Analytics
                   </p>
                   <pre className="p-3.5 rounded-xl bg-surface-container-low font-code text-xs text-on-surface overflow-x-auto border border-outline-variant/20 leading-relaxed">
-{`curl http://localhost:5000/api/analytics/overview \\
+{`curl https://zelnk.onrender.com/api/analytics/overview \\
   -H "Authorization: Bearer ${apiKey}"`}
                   </pre>
                 </div>

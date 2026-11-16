@@ -12,45 +12,30 @@ interface CreateLinkViewProps {
   onOpenAuth?: () => void;
 }
 
-const LOCAL_DOMAIN = 'localhost:5000';
-const DEPLOYED_DOMAIN = 'zelnk.onrender.com';
-
-const isRunningLocally = (): boolean => {
-  if (typeof window === 'undefined') return true;
-  const host = window.location.hostname;
-  return (
-    host === 'localhost' ||
-    host === '127.0.0.1' ||
-    host.includes('192.168.') ||
-    host === '0.0.0.0'
-  );
-};
+const DEFAULT_PLATFORM_DOMAIN = 'zelnk.onrender.com';
 
 const getDeployDomain = (): string => {
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    if (apiUrl && !apiUrl.includes('localhost') && !apiUrl.includes('127.0.0.1')) {
-      return new URL(apiUrl).host;
+    if (apiUrl) {
+      const parsed = new URL(apiUrl).host;
+      if (!parsed.includes('localhost') && !parsed.includes('127.0.0.1')) {
+        return parsed;
+      }
     }
   } catch {}
-  return DEPLOYED_DOMAIN;
-};
-
-const getLocalDomain = (): string => {
-  try {
-    const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    if (apiUrl && (apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1'))) {
-      return new URL(apiUrl).host;
-    }
-  } catch {}
-  return LOCAL_DOMAIN;
+  return DEFAULT_PLATFORM_DOMAIN;
 };
 
 const getPlatformDefaultDomain = (): string => {
-  const isLocal = isRunningLocally();
   const saved = localStorage.getItem('linkflow_preferred_domain');
-  if (saved) return saved;
-  return isLocal ? getLocalDomain() : getDeployDomain();
+  if (saved && !saved.includes('localhost') && !saved.includes('127.0.0.1')) {
+    return saved;
+  }
+  if (saved) {
+    localStorage.removeItem('linkflow_preferred_domain');
+  }
+  return getDeployDomain();
 };
 
 export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
@@ -59,15 +44,13 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
   currentUser,
   onOpenAuth,
 }) => {
-  const isLocalEnv = isRunningLocally();
-  const localPreset = getLocalDomain();
   const deployPreset = getDeployDomain();
   const defaultPlatformDomain = getPlatformDefaultDomain();
 
-  // Environment-specific presets: only local domain on localhost, only deployed domain on production
-  const domainPresets = isLocalEnv ? [localPreset] : [deployPreset];
+  // Primary deployed domain preset (no localhost)
+  const domainPresets = [deployPreset];
 
-  const homepageUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+  const homepageUrl = typeof window !== 'undefined' ? window.location.origin : 'https://zelnk.onrender.com';
 
   const [mode, setMode] = useState<'single' | 'bulk'>('single');
   const [protocol, setProtocol] = useState('https://');
@@ -118,7 +101,7 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
   };
 
   const fullDestination = getFullDestinationUrl();
-  const activeDomain = customDomain.trim() || (isLocalEnv ? localPreset : deployPreset);
+  const activeDomain = customDomain.trim() || deployPreset;
   const isLocal = activeDomain.includes('localhost');
   const liveShortUrl = `${isLocal ? 'http://' : 'https://'}${activeDomain}/${customAlias.trim() || 'your-custom-name'}`;
   const displayShortUrl = successUrl ? successUrl.short_url : liveShortUrl;
@@ -187,9 +170,7 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
     }
 
     const isPlatformPreset =
-      activeDomain === localPreset ||
       activeDomain === deployPreset ||
-      activeDomain === 'localhost:5000' ||
       activeDomain === 'zelnk.onrender.com' ||
       activeDomain === 'zelnk-backend.onrender.com';
 
@@ -296,9 +277,7 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
         let url = parts[0];
         if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
         const isPlatform =
-          activeDomain === localPreset ||
           activeDomain === deployPreset ||
-          activeDomain === 'localhost:5000' ||
           activeDomain === 'zelnk.onrender.com' ||
           activeDomain === 'zelnk-backend.onrender.com';
         return {
@@ -384,7 +363,7 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
   };
 
   return (
-    <div className="p-3 sm:p-5 lg:p-6 max-w-[1440px] mx-auto w-full flex flex-col gap-3.5 sm:gap-5">
+    <div className="p-3 sm:p-5 lg:p-6 max-w-[1440px] mx-auto w-full flex flex-col gap-3.5 sm:gap-5 animate-screen">
       {/* Top Header Area */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 sm:gap-4">
         <div className="flex flex-col gap-1">
@@ -393,19 +372,19 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
               Links
             </button>
             <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-on-surface font-medium">Create Custom Link</span>
+            <span className="text-on-surface font-medium">Create Link</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap pt-0.5">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-on-surface tracking-tight">
-              Create Custom Link
+              Create Short Link
             </h1>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:py-1 rounded-full bg-tertiary-container/15 text-tertiary text-[11px] sm:text-xs font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
-              FAST DEPLOY &bull; HTTP 302 Redirection
+              <span className="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+              Fast &amp; Secure Redirects
             </span>
           </div>
           <p className="text-xs text-on-surface-variant max-w-2xl">
-            Choose your exact custom short link name. Zero random codes, instant routing, and real-time live preview.
+            Shorten URLs, customize your links, and track performance with real-time stats.
           </p>
         </div>
 
@@ -741,7 +720,7 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
                       type="text"
                       value={customDomain}
                       onChange={(e) => handleDomainChange(e.target.value)}
-                      placeholder={isLocalEnv ? localPreset : deployPreset}
+                      placeholder={deployPreset}
                       className="w-full bg-transparent px-1 py-1.5 font-code text-xs text-on-surface font-semibold outline-none"
                       title="Custom domain"
                     />
@@ -770,9 +749,8 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
 
                 {/* Quick Preset Domains */}
                 <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                  <span className="text-[11px] text-on-surface-variant font-medium">Domain Presets:</span>
+                  <span className="text-[11px] text-on-surface-variant font-medium">Domain:</span>
                   {domainPresets.map((preset) => {
-                    const isLocal = preset.includes('localhost');
                     const isSelected = activeDomain.toLowerCase() === preset.toLowerCase();
                     return (
                       <button
@@ -785,9 +763,7 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
                             : 'bg-surface-container text-on-surface-variant border-outline-variant/20 hover:bg-surface-container-high hover:text-on-surface'
                         }`}
                       >
-                        <span className="material-symbols-outlined text-[14px]">
-                          {isLocal ? 'dns' : 'language'}
-                        </span>
+                        <span className="material-symbols-outlined text-[14px]">language</span>
                         <span>{preset}</span>
                       </button>
                     );

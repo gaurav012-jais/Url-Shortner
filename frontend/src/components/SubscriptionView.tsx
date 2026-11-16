@@ -275,18 +275,18 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
   const currentPlanId = mySubscription?.plan || currentUser?.plan || 'free';
 
   return (
-    <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 space-y-6 sm:space-y-8 animate-fade-in">
+    <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 space-y-6 sm:space-y-8 animate-screen">
       {/* Header Banner */}
       <div className="text-center max-w-2xl mx-auto space-y-2.5 sm:space-y-3">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
           <span className="material-symbols-outlined text-[15px]">verified</span>
-          <span>Transparent Pricing & Plans</span>
+          <span>Plans &amp; Pricing</span>
         </div>
         <h1 className="text-2xl sm:text-4xl font-extrabold text-on-surface tracking-tight">
-          Supercharge Your Short Links
+          Simple, Transparent Pricing
         </h1>
         <p className="text-xs sm:text-sm text-on-surface-variant leading-relaxed px-2">
-          Unlock unlimited clicks, permanent URLs, passcode locks, and deep analytics. Upgrade or downgrade anytime with zero lock-in.
+          Pick a plan that fits your project or team. Upgrade or cancel anytime.
         </p>
 
         {/* Monthly / Yearly Toggle */}
@@ -517,15 +517,15 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-primary text-[20px] sm:text-[22px]">tune</span>
-              <h2 className="text-base sm:text-xl font-bold text-on-surface tracking-tight">Feature Breakdown & System Quotas</h2>
+              <h2 className="text-base sm:text-xl font-bold text-on-surface tracking-tight">Feature Comparison</h2>
             </div>
             <p className="text-xs text-on-surface-variant">
-              Detailed bandwidth limits, link quotas, and capability breakdown across all tiers.
+              Compare limits and capabilities included in each tier.
             </p>
           </div>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary font-semibold text-xs border border-primary/20 self-start sm:self-auto">
             <span className="material-symbols-outlined text-[15px]">compare_arrows</span>
-            <span>All Plans Compared</span>
+            <span>All Features</span>
           </span>
         </div>
 

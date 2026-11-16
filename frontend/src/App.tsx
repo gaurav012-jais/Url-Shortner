@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { App as CapApp } from '@capacitor/app';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { CreateLinkView } from './components/CreateLinkView';
@@ -13,6 +14,7 @@ import { AdminConsoleView } from './components/AdminConsoleView';
 import { SubscriptionView } from './components/SubscriptionView';
 import { AuthModal } from './components/AuthModal';
 import { AuthGatewayView } from './components/AuthGatewayView';
+import { PullToRefresh } from './components/PullToRefresh';
 import { UrlItem, User } from './types';
 import { urlApi, authApi } from './services/api';
 
@@ -36,6 +38,87 @@ export const App: React.FC = () => {
     return localStorage.getItem('linkflow_is_guest') === 'true';
   });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // Native Android Double-Back Exit Toast state
+  const [exitToast, setExitToast] = useState(false);
+  const lastBackPressRef = useRef<number>(0);
+
+  // Defensive cleanup: purge any old cached domain pointing to localhost/127.0.0.1
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('linkflow_preferred_domain');
+      if (saved && (saved.includes('localhost') || saved.includes('127.0.0.1'))) {
+        localStorage.removeItem('linkflow_preferred_domain');
+      }
+    } catch {}
+  }, []);
+
+  // Native Android Hardware Back Button: Modals -> Root Tab -> Double Back to Exit
+  useEffect(() => {
+    let removeListener: (() => void) | null = null;
+
+    const setupBackHandler = async () => {
+      try {
+        const listener = await CapApp.addListener('backButton', () => {
+          // 1. If any modal is open, dismiss it
+          if (isAuthModalOpen) {
+            setIsAuthModalOpen(false);
+            return;
+          }
+          if (selectedQrUrl) {
+            setSelectedQrUrl(null);
+            return;
+          }
+          if (selectedAnalyticsUrl) {
+            setSelectedAnalyticsUrl(null);
+            return;
+          }
+          if (isMobileNavOpen) {
+            setIsMobileNavOpen(false);
+            return;
+          }
+
+          // 2. If user is in a secondary view, navigate back to overview
+          if (activeTab !== 'overview' && activeTab !== 'landing') {
+            setActiveTab('overview');
+            return;
+          }
+
+          // 3. If on root tab: double back press to exit within 2000ms
+          const now = Date.now();
+          if (now - lastBackPressRef.current < 2000) {
+            CapApp.exitApp();
+          } else {
+            lastBackPressRef.current = now;
+            setExitToast(true);
+            setTimeout(() => setExitToast(false), 2000);
+          }
+        });
+
+        removeListener = () => {
+          listener.remove();
+        };
+      } catch {
+        // Ignored on standard web browsers where CapApp is inactive
+      }
+    };
+
+    setupBackHandler();
+
+    return () => {
+      if (removeListener) removeListener();
+    };
+  }, [
+    isAuthModalOpen,
+    selectedQrUrl,
+    selectedAnalyticsUrl,
+    isMobileNavOpen,
+    activeTab,
+  ]);
+
+  const handlePullRefresh = async () => {
+    await fetchUrls(true);
+  };
 
   const fetchUrls = async (isBackground = false) => {
     try {
@@ -187,236 +270,238 @@ export const App: React.FC = () => {
           />
         )}
 
-        {/* Main Content Area */}
-        <main className={`w-full flex-1 ${activeTab !== 'landing' ? 'pt-14' : ''}`}>
-          {activeTab === 'landing' && (
-            <LandingPageView
-              onOpenConsole={() => setActiveTab('create-link')}
-              onOpenAuth={() => setIsAuthModalOpen(true)}
-              onLinkCreated={handleLinkCreated}
-            />
-          )}
+        {/* Main Content Area with Native Pull-To-Refresh */}
+        <PullToRefresh onRefresh={handlePullRefresh}>
+          <main className={`w-full flex-1 ${activeTab !== 'landing' ? 'pt-14' : ''}`}>
+            {activeTab === 'landing' && (
+              <LandingPageView
+                onOpenConsole={() => setActiveTab('create-link')}
+                onOpenAuth={() => setIsAuthModalOpen(true)}
+                onLinkCreated={handleLinkCreated}
+              />
+            )}
 
-          {activeTab === 'create-link' && (
-            <CreateLinkView
-              onLinkCreated={handleLinkCreated}
-              onNavigateToLinks={() => setActiveTab('links')}
-              currentUser={currentUser}
-              onOpenAuth={() => setIsAuthModalOpen(true)}
-            />
-          )}
+            {activeTab === 'create-link' && (
+              <CreateLinkView
+                onLinkCreated={handleLinkCreated}
+                onNavigateToLinks={() => setActiveTab('links')}
+                currentUser={currentUser}
+                onOpenAuth={() => setIsAuthModalOpen(true)}
+              />
+            )}
 
-          {activeTab === 'links' && (
-            <LinksListView
-              urls={urls}
-              loading={loading}
-              searchQuery={searchQuery}
-              onNavigateToCreate={() => setActiveTab('create-link')}
-              onToggleActive={handleToggleActive}
-              onDeleteUrl={handleDeleteUrl}
-              onOpenQr={(url) => setSelectedQrUrl(url)}
-              onOpenAnalytics={(url) => setSelectedAnalyticsUrl(url)}
-            />
-          )}
+            {activeTab === 'links' && (
+              <LinksListView
+                urls={urls}
+                loading={loading}
+                searchQuery={searchQuery}
+                onNavigateToCreate={() => setActiveTab('create-link')}
+                onToggleActive={handleToggleActive}
+                onDeleteUrl={handleDeleteUrl}
+                onOpenQr={(url) => setSelectedQrUrl(url)}
+                onOpenAnalytics={(url) => setSelectedAnalyticsUrl(url)}
+              />
+            )}
 
-          {activeTab === 'overview' && (
-            <OverviewView
-              urls={urls}
-              onNavigateToLinks={() => setActiveTab('links')}
-              onOpenQr={(url) => setSelectedQrUrl(url)}
-              onOpenAnalytics={(url) => setSelectedAnalyticsUrl(url)}
-              onLinkCreated={handleLinkCreated}
-            />
-          )}
+            {activeTab === 'overview' && (
+              <OverviewView
+                urls={urls}
+                onNavigateToLinks={() => setActiveTab('links')}
+                onOpenQr={(url) => setSelectedQrUrl(url)}
+                onOpenAnalytics={(url) => setSelectedAnalyticsUrl(url)}
+                onLinkCreated={handleLinkCreated}
+              />
+            )}
 
-          {activeTab === 'qr-codes' && (() => {
-            const qrTotalPages = Math.max(1, Math.ceil(urls.length / QR_PER_PAGE));
-            const safeQrPage = Math.min(qrPage, qrTotalPages);
-            const paginatedQr = urls.slice((safeQrPage - 1) * QR_PER_PAGE, safeQrPage * QR_PER_PAGE);
-            return (
-              <div className="p-3 sm:p-5 lg:p-6 max-w-[1440px] mx-auto w-full flex flex-col gap-3.5 sm:gap-5">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h1 className="text-xl sm:text-2xl font-semibold text-on-surface">QR Code Hub</h1>
-                    <p className="text-[11px] sm:text-xs text-on-surface-variant">
-                      Vector scannable QR codes generated for each custom routing rule.
-                    </p>
-                  </div>
-                  {urls.length > 0 && (
-                    <span className="px-2.5 py-0.5 rounded-full bg-surface-container-high text-primary font-code text-[11px] sm:text-xs font-semibold">
-                      {urls.length} total
-                    </span>
-                  )}
-                </div>
-
-                {urls.length === 0 ? (
-                  <div className="p-12 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant/30 flex flex-col items-center gap-3">
-                    <span className="material-symbols-outlined text-[48px] text-outline">qr_code_2</span>
-                    <p className="text-sm font-semibold text-on-surface">No short links created yet</p>
-                    <p className="text-xs text-on-surface-variant">
-                      Create your first custom link to generate scannable QR codes.
-                    </p>
-                    <button
-                      onClick={() => setActiveTab('create-link')}
-                      className="mt-2 px-4 py-2 rounded-lg bg-primary text-on-primary text-xs font-semibold"
-                    >
-                      + Create Link
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                      {paginatedQr.map((link) => (
-                        <div
-                          key={link.id}
-                          className="p-3.5 sm:p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm flex flex-col items-center text-center gap-3 hover:shadow-md transition"
-                        >
-                          <div
-                            className="w-full text-left truncate font-semibold text-xs text-on-surface"
-                            title={link.title || link.short_code}
-                          >
-                            {link.title || link.short_code}
-                          </div>
-                          <div className="p-3 bg-white rounded-xl border border-outline-variant/30 shadow-inner flex items-center justify-center">
-                            <QRCodeSVG
-                              id={`qr-svg-${link.id}`}
-                              value={link.short_url}
-                              size={112}
-                              level="M"
-                              includeMargin={false}
-                            />
-                          </div>
-                          <span className="font-code text-xs text-primary font-bold truncate max-w-full">
-                            /{link.short_code}
-                          </span>
-                          <button
-                            onClick={() => setSelectedQrUrl(link)}
-                            className="w-full py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-xs font-medium text-on-surface transition flex items-center justify-center gap-1.5"
-                          >
-                            <span className="material-symbols-outlined text-[15px]">zoom_in</span>
-                            <span>View &amp; Download</span>
-                          </button>
-                        </div>
-                      ))}
+            {activeTab === 'qr-codes' && (() => {
+              const qrTotalPages = Math.max(1, Math.ceil(urls.length / QR_PER_PAGE));
+              const safeQrPage = Math.min(qrPage, qrTotalPages);
+              const paginatedQr = urls.slice((safeQrPage - 1) * QR_PER_PAGE, safeQrPage * QR_PER_PAGE);
+              return (
+                <div className="p-3 sm:p-5 lg:p-6 max-w-[1440px] mx-auto w-full flex flex-col gap-3.5 sm:gap-5 animate-screen">
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h1 className="text-xl sm:text-2xl font-semibold text-on-surface">QR Code Hub</h1>
+                      <p className="text-[11px] sm:text-xs text-on-surface-variant">
+                        Download and share QR codes for your short links.
+                      </p>
                     </div>
+                    {urls.length > 0 && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-surface-container-high text-primary font-code text-[11px] sm:text-xs font-semibold">
+                        {urls.length} total
+                      </span>
+                    )}
+                  </div>
 
-                    {/* Device-Adaptive QR Pagination Bar */}
-                    {urls.length > QR_PER_PAGE && (
-                      <div className="mt-2 pt-2">
-                        {/* Mobile Pagination (< 640px) */}
-                        <div className="flex sm:hidden items-center justify-between px-1">
-                          <span className="text-[11px] font-code text-on-surface-variant">
-                            {(safeQrPage - 1) * QR_PER_PAGE + 1}–{Math.min(safeQrPage * QR_PER_PAGE, urls.length)} of{' '}
-                            <strong className="text-on-surface">{urls.length}</strong>
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={() => setQrPage(safeQrPage - 1)}
-                              disabled={safeQrPage === 1}
-                              className="w-8 h-8 rounded-lg bg-surface-container-low text-on-surface flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed active:bg-surface-container transition shadow-sm"
-                              title="Previous page"
+                  {urls.length === 0 ? (
+                    <div className="p-12 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant/30 flex flex-col items-center gap-3">
+                      <span className="material-symbols-outlined text-[48px] text-outline">qr_code_2</span>
+                      <p className="text-sm font-semibold text-on-surface">No short links created yet</p>
+                      <p className="text-xs text-on-surface-variant">
+                        Create your first custom link to generate scannable QR codes.
+                      </p>
+                      <button
+                        onClick={() => setActiveTab('create-link')}
+                        className="mt-2 px-4 py-2 rounded-lg bg-primary text-on-primary text-xs font-semibold"
+                      >
+                        + Create Link
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                        {paginatedQr.map((link) => (
+                          <div
+                            key={link.id}
+                            className="p-3.5 sm:p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm flex flex-col items-center text-center gap-3 hover:shadow-md transition"
+                          >
+                            <div
+                              className="w-full text-left truncate font-semibold text-xs text-on-surface"
+                              title={link.title || link.short_code}
                             >
-                              <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-                            </button>
-                            <span className="font-code text-xs px-2 text-on-surface font-semibold">
-                              {safeQrPage} / {qrTotalPages}
+                              {link.title || link.short_code}
+                            </div>
+                            <div className="p-3 bg-white rounded-xl border border-outline-variant/30 shadow-inner flex items-center justify-center">
+                              <QRCodeSVG
+                                id={`qr-svg-${link.id}`}
+                                value={link.short_url}
+                                size={112}
+                                level="M"
+                                includeMargin={false}
+                              />
+                            </div>
+                            <span className="font-code text-xs text-primary font-bold truncate max-w-full">
+                              /{link.short_code}
                             </span>
                             <button
-                              onClick={() => setQrPage(safeQrPage + 1)}
-                              disabled={safeQrPage === qrTotalPages}
-                              className="w-8 h-8 rounded-lg bg-surface-container-low text-on-surface flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed active:bg-surface-container transition shadow-sm"
-                              title="Next page"
+                              onClick={() => setSelectedQrUrl(link)}
+                              className="w-full py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-xs font-medium text-on-surface transition flex items-center justify-center gap-1.5"
                             >
-                              <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                              <span className="material-symbols-outlined text-[15px]">zoom_in</span>
+                              <span>View &amp; Download</span>
                             </button>
                           </div>
-                        </div>
-
-                        {/* Desktop Pagination (≥ 640px) */}
-                        <div className="hidden sm:flex items-center justify-between px-1">
-                          <p className="text-xs text-on-surface-variant font-code">
-                            Showing{' '}
-                            <span className="font-semibold text-on-surface">
-                              {(safeQrPage - 1) * QR_PER_PAGE + 1}–{Math.min(safeQrPage * QR_PER_PAGE, urls.length)}
-                            </span>{' '}
-                            of <span className="font-semibold text-on-surface">{urls.length}</span> QR codes
-                          </p>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => setQrPage(safeQrPage - 1)}
-                              disabled={safeQrPage === 1}
-                              className="p-1.5 rounded-lg border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed transition"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-                            </button>
-                            {Array.from({ length: qrTotalPages }, (_, i) => i + 1)
-                              .filter((p) => p === 1 || p === qrTotalPages || Math.abs(p - safeQrPage) <= 1)
-                              .reduce<(number | '...')[]>((acc, p, idx, arr) => {
-                                if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('...');
-                                acc.push(p);
-                                return acc;
-                              }, [])
-                              .map((p, idx) =>
-                                p === '...' ? (
-                                  <span key={`qdot-${idx}`} className="px-2 text-xs text-on-surface-variant">…</span>
-                                ) : (
-                                  <button
-                                    key={p}
-                                    onClick={() => setQrPage(p as number)}
-                                    className={`min-w-[32px] h-8 px-2 rounded-lg text-xs font-semibold transition border ${
-                                      safeQrPage === p
-                                        ? 'bg-primary text-on-primary border-primary shadow-sm'
-                                        : 'border-outline-variant/30 text-on-surface-variant hover:bg-surface-container'
-                                    }`}
-                                  >
-                                    {p}
-                                  </button>
-                                )
-                              )}
-                            <button
-                              onClick={() => setQrPage(safeQrPage + 1)}
-                              disabled={safeQrPage === qrTotalPages}
-                              className="p-1.5 rounded-lg border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed transition"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-                            </button>
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    )}
-                  </>
-                )}
-              </div>
-            );
-          })()}
 
-          {activeTab === 'settings' && (
-            <SettingsView
-              currentUser={currentUser}
-              onOpenAuth={() => setIsAuthModalOpen(true)}
-              onLogout={handleLogout}
-              onNavigateToSubscription={() => setActiveTab('subscription')}
-              workspaceName={workspaceName}
-              onWorkspaceNameChange={setWorkspaceName}
-            />
-          )}
+                      {/* Device-Adaptive QR Pagination Bar */}
+                      {urls.length > QR_PER_PAGE && (
+                        <div className="mt-2 pt-2">
+                          {/* Mobile Pagination (< 640px) */}
+                          <div className="flex sm:hidden items-center justify-between px-1">
+                            <span className="text-[11px] font-code text-on-surface-variant">
+                              {(safeQrPage - 1) * QR_PER_PAGE + 1}–{Math.min(safeQrPage * QR_PER_PAGE, urls.length)} of{' '}
+                              <strong className="text-on-surface">{urls.length}</strong>
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => setQrPage(safeQrPage - 1)}
+                                disabled={safeQrPage === 1}
+                                className="w-8 h-8 rounded-lg bg-surface-container-low text-on-surface flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed active:bg-surface-container transition shadow-sm"
+                                title="Previous page"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+                              </button>
+                              <span className="font-code text-xs px-2 text-on-surface font-semibold">
+                                {safeQrPage} / {qrTotalPages}
+                              </span>
+                              <button
+                                onClick={() => setQrPage(safeQrPage + 1)}
+                                disabled={safeQrPage === qrTotalPages}
+                                className="w-8 h-8 rounded-lg bg-surface-container-low text-on-surface flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed active:bg-surface-container transition shadow-sm"
+                                title="Next page"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                              </button>
+                            </div>
+                          </div>
 
-          {activeTab === 'subscription' && (
-            <SubscriptionView
-              currentUser={currentUser}
-              onOpenAuthModal={() => setIsAuthModalOpen(true)}
-              onUserUpdated={(updatedUser) => {
-                setCurrentUser(updatedUser);
-                authApi.saveCurrentUser(updatedUser);
-              }}
-            />
-          )}
+                          {/* Desktop Pagination (≥ 640px) */}
+                          <div className="hidden sm:flex items-center justify-between px-1">
+                            <p className="text-xs text-on-surface-variant font-code">
+                              Showing{' '}
+                              <span className="font-semibold text-on-surface">
+                                {(safeQrPage - 1) * QR_PER_PAGE + 1}–{Math.min(safeQrPage * QR_PER_PAGE, urls.length)}
+                              </span>{' '}
+                              of <span className="font-semibold text-on-surface">{urls.length}</span> QR codes
+                            </p>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setQrPage(safeQrPage - 1)}
+                                disabled={safeQrPage === 1}
+                                className="p-1.5 rounded-lg border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed transition"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+                              </button>
+                              {Array.from({ length: qrTotalPages }, (_, i) => i + 1)
+                                .filter((p) => p === 1 || p === qrTotalPages || Math.abs(p - safeQrPage) <= 1)
+                                .reduce<(number | '...')[]>((acc, p, idx, arr) => {
+                                  if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('...');
+                                  acc.push(p);
+                                  return acc;
+                                }, [])
+                                .map((p, idx) =>
+                                  p === '...' ? (
+                                    <span key={`qdot-${idx}`} className="px-2 text-xs text-on-surface-variant">…</span>
+                                  ) : (
+                                    <button
+                                      key={p}
+                                      onClick={() => setQrPage(p as number)}
+                                      className={`min-w-[32px] h-8 px-2 rounded-lg text-xs font-semibold transition border ${
+                                        safeQrPage === p
+                                          ? 'bg-primary text-on-primary border-primary shadow-sm'
+                                          : 'border-outline-variant/30 text-on-surface-variant hover:bg-surface-container'
+                                      }`}
+                                    >
+                                      {p}
+                                    </button>
+                                  )
+                                )}
+                              <button
+                                onClick={() => setQrPage(safeQrPage + 1)}
+                                disabled={safeQrPage === qrTotalPages}
+                                className="p-1.5 rounded-lg border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed transition"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })()}
 
-          {activeTab === 'admin' && currentUser?.role === 'admin' && (
-            <AdminConsoleView onBackToUserView={() => setActiveTab('overview')} />
-          )}
-        </main>
+            {activeTab === 'settings' && (
+              <SettingsView
+                currentUser={currentUser}
+                onOpenAuth={() => setIsAuthModalOpen(true)}
+                onLogout={handleLogout}
+                onNavigateToSubscription={() => setActiveTab('subscription')}
+                workspaceName={workspaceName}
+                onWorkspaceNameChange={setWorkspaceName}
+              />
+            )}
+
+            {activeTab === 'subscription' && (
+              <SubscriptionView
+                currentUser={currentUser}
+                onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                onUserUpdated={(updatedUser) => {
+                  setCurrentUser(updatedUser);
+                  authApi.saveCurrentUser(updatedUser);
+                }}
+              />
+            )}
+
+            {activeTab === 'admin' && currentUser?.role === 'admin' && (
+              <AdminConsoleView onBackToUserView={() => setActiveTab('overview')} />
+            )}
+          </main>
+        </PullToRefresh>
       </div>
 
       {/* Mobile Bottom Navigation Bar (Matching Phone Version) */}
@@ -491,6 +576,13 @@ export const App: React.FC = () => {
           fetchUrls();
         }}
       />
+      {/* Native Android Double-Tap Exit Toast */}
+      {exitToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-zinc-900/95 text-white text-xs font-medium rounded-full shadow-2xl backdrop-blur-md animate-toast flex items-center gap-2 pointer-events-none border border-white/10">
+          <span className="material-symbols-outlined text-[16px] text-zinc-300">touch_app</span>
+          <span>Press back again to exit</span>
+        </div>
+      )}
     </div>
   );
 };

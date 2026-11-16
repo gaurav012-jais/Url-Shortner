@@ -1012,7 +1012,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({
               <div className="space-y-2 text-xs divide-y divide-outline-variant/10">
                 <div className="flex items-center justify-between py-1.5">
                   <span className="text-on-surface-variant">Backend API Engine:</span>
-                  <span className="font-code font-semibold text-on-surface">http://localhost:5000</span>
+                  <span className="font-code font-semibold text-on-surface">https://zelnk.onrender.com</span>
                 </div>
                 <div className="flex items-center justify-between py-1.5">
                   <span className="text-on-surface-variant">Primary Relational DB:</span>

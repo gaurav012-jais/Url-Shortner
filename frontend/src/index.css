@@ -3,9 +3,19 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
   body {
     @apply bg-background text-on-surface antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  input, textarea {
+    user-select: auto;
+    -webkit-user-select: auto;
   }
 }
 
@@ -31,4 +41,35 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #777585;
+}
+
+/* Premium App Transitions & Micro-interactions */
+@keyframes screenEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toastSlideUp {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 14px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+.animate-screen {
+  animation: screenEntrance 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-toast {
+  animation: toastSlideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }

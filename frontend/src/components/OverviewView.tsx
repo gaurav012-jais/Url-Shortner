@@ -103,21 +103,21 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   ];
 
   return (
-    <div className="p-3 sm:p-5 lg:p-6 max-w-[1440px] mx-auto w-full flex flex-col gap-3.5 sm:gap-5">
+    <div className="p-3 sm:p-5 lg:p-6 max-w-[1440px] mx-auto w-full flex flex-col gap-3.5 sm:gap-5 animate-screen">
       {/* Top Quick Shortener Bar */}
       <div className="bg-surface-container-lowest rounded-xl p-2.5 sm:p-3 shadow-sm border border-outline-variant/30">
         <form onSubmit={handleQuickShorten} className="flex flex-col md:flex-row items-center gap-2">
           <div className="hidden sm:flex items-center pl-2 text-outline pointer-events-none">
-            <span className="material-symbols-outlined text-[20px] text-primary">bolt</span>
+            <span className="material-symbols-outlined text-[20px] text-primary">link</span>
           </div>
 
           <div className="flex-1 w-full flex items-center min-w-0 bg-surface-container-low sm:bg-transparent rounded-lg px-2 sm:px-0">
-            <span className="sm:hidden material-symbols-outlined text-[18px] text-primary mr-1.5">bolt</span>
+            <span className="sm:hidden material-symbols-outlined text-[18px] text-primary mr-1.5">link</span>
             <input
               type="text"
               value={quickUrl}
               onChange={(e) => setQuickUrl(e.target.value)}
-              placeholder="Paste destination URL to quickly deploy..."
+              placeholder="Paste a long URL to shorten..."
               className="w-full bg-transparent py-2 text-xs font-code text-on-surface placeholder:text-outline outline-none"
             />
           </div>
@@ -152,7 +152,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         </form>
       </div>
 
-      {/* 4-Grid KPI Stats: 2x2 on Mobile, 4-col on Desktop (Matching Phone Version) */}
+      {/* 4-Grid KPI Stats: 2x2 on Mobile, 4-col on Desktop */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Stat 1: Total Links */}
         <div className="bg-surface-container-lowest rounded-xl p-3 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between active:scale-[0.99] transition">
@@ -168,10 +168,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="text-xl sm:text-2xl font-bold font-code text-on-surface tracking-tight">
               {totalLinks}
             </div>
-            <div className="flex items-center gap-1 mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-tertiary font-medium">
-              <span className="material-symbols-outlined text-[12px] sm:text-[14px]">arrow_upward</span>
-              <span>Registry</span>
-              <span className="hidden sm:inline text-on-surface-variant font-normal">&bull; Postgres</span>
+            <div className="flex items-center gap-1 mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-on-surface-variant font-medium">
+              <span>All created links</span>
             </div>
           </div>
         </div>
@@ -190,10 +188,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="text-xl sm:text-2xl font-bold font-code text-on-surface tracking-tight">
               {totalClicks}
             </div>
-            <div className="flex items-center gap-1 mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-tertiary font-medium">
-              <span className="material-symbols-outlined text-[12px] sm:text-[14px]">trending_up</span>
-              <span>Real-time</span>
-              <span className="hidden sm:inline text-on-surface-variant font-normal">&bull; 302 Edge</span>
+            <div className="flex items-center gap-1 mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-on-surface-variant font-medium">
+              <span>Total visitors</span>
             </div>
           </div>
         </div>
@@ -215,7 +211,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="flex items-center gap-1 mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-on-surface-variant">
               <span className="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
               <span className="font-semibold text-on-surface">{activeCount}</span>
-              <span>active</span>
+              <span>live</span>
             </div>
           </div>
         </div>
@@ -234,9 +230,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="text-xl sm:text-2xl font-bold font-code text-on-surface tracking-tight">
               {avgClicks}
             </div>
-            <div className="flex items-center gap-1 mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-tertiary font-medium">
-              <span className="material-symbols-outlined text-[12px] sm:text-[14px]">bolt</span>
-              <span>Efficiency</span>
+            <div className="flex items-center gap-1 mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-on-surface-variant font-medium">
+              <span>Clicks per link</span>
             </div>
           </div>
         </div>
@@ -248,14 +243,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         <div className="xl:col-span-8 bg-surface-container-lowest rounded-xl p-3.5 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-outline-variant/20">
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-semibold text-xs sm:text-sm text-on-surface">Click Volume Telemetry</h2>
-                <span className="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-code text-[10px]">
-                  Real-time
-                </span>
-              </div>
+              <h2 className="font-semibold text-xs sm:text-sm text-on-surface">Click Analytics</h2>
               <p className="text-[11px] text-on-surface-variant mt-0.5">
-                Aggregated interaction curves across all active routes
+                Total click trends across your active links
               </p>
             </div>
 
@@ -318,9 +308,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20 mb-2.5">
               <span className="text-xs font-semibold text-on-surface flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px] text-primary">devices</span>
-                Device Split
+                Devices
               </span>
-              <span className="text-[10px] text-on-surface-variant font-code">Live</span>
             </div>
 
             <div className="space-y-2">
@@ -347,9 +336,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20 mb-2.5">
               <span className="text-xs font-semibold text-on-surface flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px] text-primary">public</span>
-                Browser Breakdown
+                Browsers
               </span>
-              <span className="text-[10px] text-on-surface-variant font-code">User-Agent</span>
             </div>
 
             <div className="space-y-2">
@@ -374,12 +362,12 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         </div>
       </div>
 
-      {/* Top Performing Routes */}
+      {/* Recent Links */}
       <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm p-3.5 sm:p-5 flex flex-col gap-3">
         <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-primary text-[18px]">history</span>
-            <h2 className="font-semibold text-xs sm:text-sm text-on-surface">Top Performing Routes</h2>
+            <h2 className="font-semibold text-xs sm:text-sm text-on-surface">Recent Links</h2>
           </div>
           <button
             onClick={onNavigateToLinks}
@@ -392,7 +380,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
         {urls.length === 0 ? (
           <div className="py-6 text-center text-xs text-on-surface-variant">
-            No links deployed yet. Use the top bar to create your first route.
+            No links created yet. Paste a link above to get started.
           </div>
         ) : (
           <div className="divide-y divide-outline-variant/15">
