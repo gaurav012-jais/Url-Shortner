@@ -187,7 +187,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
 
       {/* Current Active Plan Status Bar (Logged In) */}
       {currentUser && (
-        <div className="max-w-4xl mx-auto p-4 rounded-2xl bg-surface-container-low border border-outline-variant/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="w-full max-w-6xl mx-auto p-4 sm:p-5 rounded-2xl bg-surface-container-low border border-outline-variant/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
               <span className="material-symbols-outlined text-[22px]">
@@ -251,7 +251,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
           <p className="text-xs text-on-surface-variant font-medium">Loading subscription plans & quotas...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl mx-auto">
           {plans.map((plan) => {
             const isCurrent = currentPlanId === plan.id;
             const price = billingCycle === 'yearly' ? plan.priceYearly : plan.priceMonthly;
@@ -372,60 +372,258 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
       )}
 
       {/* Feature Comparison Table */}
-      <div className="max-w-4xl mx-auto mt-12 bg-surface-container-low rounded-3xl border border-outline-variant/30 p-6 sm:p-8 space-y-6">
-        <div className="space-y-1">
-          <h2 className="text-lg font-bold text-on-surface">Feature Breakdown & System Quotas</h2>
-          <p className="text-xs text-on-surface-variant">
-            See how ZeLnk ensures high availability and enforces fair use policies across tiers.
-          </p>
+      <div className="w-full max-w-6xl mx-auto mt-10 sm:mt-12 bg-surface-container-low rounded-3xl border border-outline-variant/30 p-5 sm:p-8 space-y-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-outline-variant/20 pb-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[22px]">tune</span>
+              <h2 className="text-lg sm:text-xl font-bold text-on-surface tracking-tight">Feature Breakdown & System Quotas</h2>
+            </div>
+            <p className="text-xs text-on-surface-variant">
+              See how ZeLnk ensures high availability, sub-15ms edge routing, and enforces fair use policies across tiers.
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary font-semibold text-xs border border-primary/20 self-start sm:self-auto">
+            <span className="material-symbols-outlined text-[15px]">compare_arrows</span>
+            <span>All Plans Compared</span>
+          </span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse">
+        <div className="overflow-x-auto -mx-2 sm:mx-0">
+          <table className="w-full text-xs sm:text-sm text-left border-collapse min-w-[700px]">
             <thead>
               <tr className="border-b border-outline-variant/30 text-on-surface-variant">
-                <th className="py-3 px-3 font-semibold">Capability</th>
-                <th className="py-3 px-3 font-semibold text-center">Free Starter</th>
-                <th className="py-3 px-3 font-semibold text-center text-primary font-bold">Pro Creator</th>
-                <th className="py-3 px-3 font-semibold text-center">Enterprise</th>
+                <th className="py-3.5 px-4 font-semibold uppercase tracking-wider text-outline text-[11px] w-[34%]">Capability</th>
+                <th className="py-3.5 px-4 font-semibold text-center uppercase tracking-wider text-outline text-[11px] w-[22%]">Free Starter</th>
+                <th className="py-3.5 px-4 font-extrabold text-center uppercase tracking-wider text-primary text-[11px] w-[22%] bg-primary/5 border-x border-primary/20 rounded-t-xl">Pro Creator</th>
+                <th className="py-3.5 px-4 font-semibold text-center uppercase tracking-wider text-outline text-[11px] w-[22%]">Enterprise</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/20 text-on-surface">
-              <tr>
-                <td className="py-3 px-3 font-medium">Click Bandwidth per link</td>
-                <td className="py-3 px-3 text-center text-on-surface-variant">100 Clicks</td>
-                <td className="py-3 px-3 text-center text-emerald-600 dark:text-emerald-400 font-bold">Unlimited</td>
-                <td className="py-3 px-3 text-center text-emerald-600 dark:text-emerald-400 font-bold">Unlimited</td>
+              <tr className="hover:bg-surface-container/40 transition-colors">
+                <td className="py-3.5 px-4 font-medium text-on-surface">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-primary">touch_app</span>
+                    <div>
+                      <div className="font-semibold">Click Bandwidth per Link</div>
+                      <div className="text-[11px] text-on-surface-variant">Monthly visitor redirection allowance</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="py-3.5 px-4 text-center">
+                  <span className="px-2.5 py-1 rounded-md bg-surface-container font-medium text-on-surface-variant text-xs">100 Clicks</span>
+                </td>
+                <td className="py-3.5 px-4 text-center bg-primary/[0.03] border-x border-primary/20">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20 text-xs">
+                    <span className="material-symbols-outlined text-[14px]">all_inclusive</span>Unlimited
+                  </span>
+                </td>
+                <td className="py-3.5 px-4 text-center">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20 text-xs">
+                    <span className="material-symbols-outlined text-[14px]">all_inclusive</span>Unlimited
+                  </span>
+                </td>
               </tr>
-              <tr>
-                <td className="py-3 px-3 font-medium">Password-Protected URLs</td>
-                <td className="py-3 px-3 text-center text-on-surface-variant">Max 5 Links</td>
-                <td className="py-3 px-3 text-center text-emerald-600 dark:text-emerald-400 font-bold">Unlimited</td>
-                <td className="py-3 px-3 text-center text-emerald-600 dark:text-emerald-400 font-bold">Unlimited</td>
+
+              <tr className="hover:bg-surface-container/40 transition-colors">
+                <td className="py-3.5 px-4 font-medium text-on-surface">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-primary">lock</span>
+                    <div>
+                      <div className="font-semibold">Password-Protected URLs</div>
+                      <div className="text-[11px] text-on-surface-variant">Gate sensitive links behind passcodes</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="py-3.5 px-4 text-center">
+                  <span className="px-2.5 py-1 rounded-md bg-surface-container font-medium text-on-surface-variant text-xs">Max 5 Links</span>
+                </td>
+                <td className="py-3.5 px-4 text-center bg-primary/[0.03] border-x border-primary/20">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20 text-xs">
+                    <span className="material-symbols-outlined text-[14px]">all_inclusive</span>Unlimited
+                  </span>
+                </td>
+                <td className="py-3.5 px-4 text-center">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20 text-xs">
+                    <span className="material-symbols-outlined text-[14px]">all_inclusive</span>Unlimited
+                  </span>
+                </td>
               </tr>
-              <tr>
-                <td className="py-3 px-3 font-medium">Custom Vanity Slugs</td>
-                <td className="py-3 px-3 text-center text-emerald-600 dark:text-emerald-400">✓ Included</td>
-                <td className="py-3 px-3 text-center text-emerald-600 dark:text-emerald-400">✓ Included</td>
-                <td className="py-3 px-3 text-center text-emerald-600 dark:text-emerald-400">✓ Included</td>
+
+              <tr className="hover:bg-surface-container/40 transition-colors">
+                <td className="py-3.5 px-4 font-medium text-on-surface">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-primary">link</span>
+                    <div>
+                      <div className="font-semibold">Custom Vanity Slugs & Aliases</div>
+                      <div className="text-[11px] text-on-surface-variant">Choose exact memorable short names</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="py-3.5 px-4 text-center">
+                  <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold text-xs">
+                    <span className="material-symbols-outlined text-[16px]">check_circle</span>Included
+                  </span>
+                </td>
+                <td className="py-3.5 px-4 text-center bg-primary/[0.03] border-x border-primary/20">
+                  <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold text-xs">
+                    <span className="material-symbols-outlined text-[16px]">check_circle</span>Included
+                  </span>
+                </td>
+                <td className="py-3.5 px-4 text-center">
+                  <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold text-xs">
+                    <span className="material-symbols-outlined text-[16px]">check_circle</span>Included
+                  </span>
+                </td>
               </tr>
-              <tr>
-                <td className="py-3 px-3 font-medium">Bulk Batch Shorten Limit</td>
-                <td className="py-3 px-3 text-center text-on-surface-variant">10 URLs / Batch</td>
-                <td className="py-3 px-3 text-center font-bold">100 URLs / Batch</td>
-                <td className="py-3 px-3 text-center font-bold">500 URLs / Batch</td>
+
+              <tr className="hover:bg-surface-container/40 transition-colors">
+                <td className="py-3.5 px-4 font-medium text-on-surface">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-primary">language</span>
+                    <div>
+                      <div className="font-semibold">Custom Branded Domains</div>
+                      <div className="text-[11px] text-on-surface-variant">Connect personal or company domains</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="py-3.5 px-4 text-center text-on-surface-variant text-xs">
+                  Default Domain
+                </td>
+                <td className="py-3.5 px-4 text-center bg-primary/[0.03] border-x border-primary/20">
+                  <span className="font-bold text-primary text-xs">Up to 5 Domains</span>
+                </td>
+                <td className="py-3.5 px-4 text-center">
+                  <span className="font-bold text-purple-600 dark:text-purple-400 text-xs">Unlimited Domains</span>
+                </td>
               </tr>
-              <tr>
-                <td className="py-3 px-3 font-medium">Analytics Depth</td>
-                <td className="py-3 px-3 text-center text-on-surface-variant">Standard Totals</td>
-                <td className="py-3 px-3 text-center font-bold">Geo, OS & Device Breakdown</td>
-                <td className="py-3 px-3 text-center font-bold">Real-time Telemetry + Export</td>
+
+              <tr className="hover:bg-surface-container/40 transition-colors">
+                <td className="py-3.5 px-4 font-medium text-on-surface">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-primary">dynamic_feed</span>
+                    <div>
+                      <div className="font-semibold">Bulk Batch Shorten Limit</div>
+                      <div className="text-[11px] text-on-surface-variant">Shorten multiple links at once via CSV/Paste</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="py-3.5 px-4 text-center">
+                  <span className="px-2.5 py-1 rounded-md bg-surface-container font-medium text-on-surface-variant text-xs">10 URLs / Batch</span>
+                </td>
+                <td className="py-3.5 px-4 text-center bg-primary/[0.03] border-x border-primary/20">
+                  <span className="px-2.5 py-1 rounded-md bg-primary/10 text-primary font-bold text-xs">100 URLs / Batch</span>
+                </td>
+                <td className="py-3.5 px-4 text-center">
+                  <span className="px-2.5 py-1 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-300 font-bold text-xs">500 URLs / Batch</span>
+                </td>
               </tr>
-              <tr>
-                <td className="py-3 px-3 font-medium">Redirection Protocol</td>
-                <td className="py-3 px-3 text-center font-code">HTTP 302</td>
-                <td className="py-3 px-3 text-center font-code text-primary font-bold">HTTP 302 Fast Edge</td>
-                <td className="py-3 px-3 text-center font-code text-purple-600 font-bold">HTTP 302 Dedicated SLA</td>
+
+              <tr className="hover:bg-surface-container/40 transition-colors">
+                <td className="py-3.5 px-4 font-medium text-on-surface">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-primary">query_stats</span>
+                    <div>
+                      <div className="font-semibold">Analytics & Telemetry Depth</div>
+                      <div className="text-[11px] text-on-surface-variant">Visitor insights, geography & devices</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="py-3.5 px-4 text-center text-on-surface-variant text-xs">
+                  Standard Totals
+                </td>
+                <td className="py-3.5 px-4 text-center font-semibold text-on-surface text-xs bg-primary/[0.03] border-x border-primary/20">
+                  Geo, OS & Device Breakdown
+                </td>
+                <td className="py-3.5 px-4 text-center font-bold text-on-surface text-xs">
+                  Real-time Telemetry + Export
+                </td>
+              </tr>
+
+              <tr className="hover:bg-surface-container/40 transition-colors">
+                <td className="py-3.5 px-4 font-medium text-on-surface">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-primary">qr_code_2</span>
+                    <div>
+                      <div className="font-semibold">QR Code Downloads & Formats</div>
+                      <div className="text-[11px] text-on-surface-variant">Instant printable and shareable QR codes</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="py-3.5 px-4 text-center text-on-surface-variant text-xs">
+                  Standard PNG
+                </td>
+                <td className="py-3.5 px-4 text-center font-semibold text-primary text-xs bg-primary/[0.03] border-x border-primary/20">
+                  High-Res PNG + SVG Download
+                </td>
+                <td className="py-3.5 px-4 text-center font-bold text-purple-600 dark:text-purple-400 text-xs">
+                  Vector SVG + Custom Branding
+                </td>
+              </tr>
+
+              <tr className="hover:bg-surface-container/40 transition-colors">
+                <td className="py-3.5 px-4 font-medium text-on-surface">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-primary">bolt</span>
+                    <div>
+                      <div className="font-semibold">Redirection Engine & Speed</div>
+                      <div className="text-[11px] text-on-surface-variant">Global routing latency & protocol</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="py-3.5 px-4 text-center">
+                  <span className="font-code text-xs px-2 py-1 rounded bg-surface-container text-on-surface-variant">HTTP 302</span>
+                </td>
+                <td className="py-3.5 px-4 text-center bg-primary/[0.03] border-x border-primary/20">
+                  <span className="font-code text-xs px-2 py-1 rounded bg-primary/10 text-primary font-bold">HTTP 302 Edge (&lt;15ms)</span>
+                </td>
+                <td className="py-3.5 px-4 text-center">
+                  <span className="font-code text-xs px-2 py-1 rounded bg-purple-500/10 text-purple-600 dark:text-purple-300 font-bold">HTTP 302 Dedicated SLA</span>
+                </td>
+              </tr>
+
+              <tr className="hover:bg-surface-container/40 transition-colors">
+                <td className="py-3.5 px-4 font-medium text-on-surface">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-primary">api</span>
+                    <div>
+                      <div className="font-semibold">Developer API & Webhooks</div>
+                      <div className="text-[11px] text-on-surface-variant">Programmatic link generation & events</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="py-3.5 px-4 text-center text-on-surface-variant text-xs">
+                  60 req / min
+                </td>
+                <td className="py-3.5 px-4 text-center font-semibold text-primary text-xs bg-primary/[0.03] border-x border-primary/20">
+                  1,000 req / min
+                </td>
+                <td className="py-3.5 px-4 text-center font-bold text-purple-600 dark:text-purple-400 text-xs">
+                  Unlimited API + Webhooks
+                </td>
+              </tr>
+
+              <tr className="hover:bg-surface-container/40 transition-colors">
+                <td className="py-3.5 px-4 font-medium text-on-surface">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-primary">support_agent</span>
+                    <div>
+                      <div className="font-semibold">Support & Redirection Uptime SLA</div>
+                      <div className="text-[11px] text-on-surface-variant">Uptime guarantee & developer assistance</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="py-3.5 px-4 text-center text-on-surface-variant text-xs">
+                  Community Support
+                </td>
+                <td className="py-3.5 px-4 text-center font-semibold text-on-surface text-xs bg-primary/[0.03] border-x border-primary/20">
+                  Priority Email (24h)
+                </td>
+                <td className="py-3.5 px-4 text-center">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20 text-xs">
+                    <span className="material-symbols-outlined text-[14px]">verified</span>99.99% SLA + 24/7
+                  </span>
+                </td>
               </tr>
             </tbody>
           </table>
