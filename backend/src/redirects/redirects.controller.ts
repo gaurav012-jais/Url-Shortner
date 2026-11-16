@@ -76,6 +76,11 @@ export class RedirectsController {
     return req.ip || req.socket?.remoteAddress || '127.0.0.1';
   }
 
+  @Get()
+  async handleRootRedirect(@Res() res: Response) {
+    return res.redirect(HttpStatus.FOUND, this.frontendUrl);
+  }
+
   @Get(':shortCode')
   async handleRedirect(
     @Param('shortCode') shortCode: string,

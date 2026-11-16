@@ -183,7 +183,13 @@ export class UrlsService implements OnModuleInit, OnModuleDestroy {
       }
     })();
     const cleanDomain = domain ? domain.trim().toLowerCase().replace(/^https?:\/\//i, '').replace(/\/+$/, '') : null;
-    const isCustomBrandedDomain = !!(cleanDomain && cleanDomain !== defaultHost && cleanDomain !== 'localhost:5000' && cleanDomain !== 'localhost');
+    const isCustomBrandedDomain = !!(
+      cleanDomain &&
+      cleanDomain !== defaultHost &&
+      cleanDomain !== 'localhost:5000' &&
+      cleanDomain !== 'localhost' &&
+      cleanDomain !== 'zelnk-backend.onrender.com'
+    );
 
     if (isCustomBrandedDomain) {
       if (!userId) {

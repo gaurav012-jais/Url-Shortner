@@ -12,16 +12,45 @@ interface CreateLinkViewProps {
   onOpenAuth?: () => void;
 }
 
-const getPlatformDefaultDomain = (): string => {
-  const saved = localStorage.getItem('linkflow_preferred_domain');
-  if (saved && saved !== 'localhost:5000') return saved;
+const LOCAL_DOMAIN = 'localhost:5000';
+const DEPLOYED_DOMAIN = 'zelnk-backend.onrender.com';
+
+const isRunningLocally = (): boolean => {
+  if (typeof window === 'undefined') return true;
+  const host = window.location.hostname;
+  return (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host.includes('192.168.') ||
+    host === '0.0.0.0'
+  );
+};
+
+const getDeployDomain = (): string => {
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    if (apiUrl) {
+    if (apiUrl && !apiUrl.includes('localhost') && !apiUrl.includes('127.0.0.1')) {
       return new URL(apiUrl).host;
     }
   } catch {}
-  return 'zelnk-backend.onrender.com';
+  return DEPLOYED_DOMAIN;
+};
+
+const getLocalDomain = (): string => {
+  try {
+    const apiUrl = import.meta.env.VITE_API_BASE_URL;
+    if (apiUrl && (apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1'))) {
+      return new URL(apiUrl).host;
+    }
+  } catch {}
+  return LOCAL_DOMAIN;
+};
+
+const getPlatformDefaultDomain = (): string => {
+  const isLocal = isRunningLocally();
+  const saved = localStorage.getItem('linkflow_preferred_domain');
+  if (saved) return saved;
+  return isLocal ? getLocalDomain() : getDeployDomain();
 };
 
 export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
@@ -30,7 +59,18 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
   currentUser,
   onOpenAuth,
 }) => {
+  const isLocalEnv = isRunningLocally();
+  const localPreset = getLocalDomain();
+  const deployPreset = getDeployDomain();
   const defaultPlatformDomain = getPlatformDefaultDomain();
+
+  // Presets: local host first if running locally, deploy domain first if on deploy
+  const domainPresets = isLocalEnv
+    ? [localPreset, deployPreset]
+    : [deployPreset, localPreset];
+
+  const homepageUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+
   const [mode, setMode] = useState<'single' | 'bulk'>('single');
   const [protocol, setProtocol] = useState('https://');
   const [rawDestination, setRawDestination] = useState('');
@@ -64,6 +104,7 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [successUrl, setSuccessUrl] = useState<UrlItem | null>(null);
   const [copied, setCopied] = useState(false);
+  const [previewCopied, setPreviewCopied] = useState(false);
   const [limits, setLimits] = useState<PublicTierLimits | null>(null);
 
   useEffect(() => {
@@ -79,9 +120,11 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
   };
 
   const fullDestination = getFullDestinationUrl();
-  const activeDomain = customDomain.trim() || defaultPlatformDomain;
+  const activeDomain = customDomain.trim() || (isLocalEnv ? localPreset : deployPreset);
   const isLocal = activeDomain.includes('localhost');
   const liveShortUrl = `${isLocal ? 'http://' : 'https://'}${activeDomain}/${customAlias.trim() || 'your-custom-name'}`;
+  const displayShortUrl = successUrl ? successUrl.short_url : liveShortUrl;
+  const qrTargetUrl = successUrl ? successUrl.short_url : homepageUrl;
 
   const handleDomainChange = (val: string) => {
     const clean = val.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
@@ -145,13 +188,16 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
       }
     }
 
+    const isPlatformPreset =
+      activeDomain === localPreset ||
+      activeDomain === deployPreset ||
+      activeDomain === 'localhost:5000' ||
+      activeDomain === 'zelnk-backend.onrender.com';
+
     const payload: CreateUrlPayload = {
       original_url: finalDestination,
       custom_alias: customAlias.trim(),
-      domain:
-        activeDomain === defaultPlatformDomain || activeDomain === 'localhost:5000'
-          ? undefined
-          : activeDomain,
+      domain: isPlatformPreset ? undefined : activeDomain,
       tags: tags.length ? tags : undefined,
     };
 
@@ -198,16 +244,33 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
     const svg = document.getElementById('preview-qr-code') as unknown as SVGElement;
     if (!svg) return;
     try {
-      await downloadQrStandeePng(
-        svg,
-        {
-          shortUrl: liveShortUrl,
-          shortCode: customAlias || 'link',
-          title: title.trim() || undefined,
-          theme: 'purple',
-        },
-        `zelnk-standee-${customAlias || 'link'}.png`,
-      );
+      if (successUrl) {
+        // User shortened a link -> Standee poster with active 302 routing URL
+        await downloadQrStandeePng(
+          svg,
+          {
+            shortUrl: successUrl.short_url,
+            shortCode: successUrl.short_code,
+            title: successUrl.title || title.trim() || undefined,
+            theme: 'purple',
+            destinationUrl: successUrl.original_url,
+          },
+          `zelnk-standee-${successUrl.short_code}.png`,
+        );
+      } else {
+        // Normal download without link shortening -> Project Homepage!
+        await downloadQrStandeePng(
+          svg,
+          {
+            shortUrl: homepageUrl,
+            shortCode: 'home',
+            title: 'ZeLnk — Smart URL Shortener',
+            theme: 'purple',
+            destinationUrl: homepageUrl,
+          },
+          'zelnk-homepage-standee.png',
+        );
+      }
     } catch (err) {
       console.error('Failed to download standee poster:', err);
     }
@@ -217,7 +280,8 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
     const svg = document.getElementById('preview-qr-code') as unknown as SVGElement;
     if (!svg) return;
     try {
-      await downloadCleanQrPng(svg, customAlias || 'link', true);
+      const codeName = successUrl ? successUrl.short_code : 'zelnk-homepage';
+      await downloadCleanQrPng(svg, codeName, true);
     } catch (err) {
       console.error('Failed to download clean QR:', err);
     }
@@ -232,13 +296,15 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
         const parts = line.split(',').map((p) => p.trim());
         let url = parts[0];
         if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+        const isPlatform =
+          activeDomain === localPreset ||
+          activeDomain === deployPreset ||
+          activeDomain === 'localhost:5000' ||
+          activeDomain === 'zelnk-backend.onrender.com';
         return {
           original_url: url,
           custom_alias: parts[1] ? parts[1].toLowerCase().replace(/[^a-z0-9_-]/g, '') : undefined,
-          domain:
-        activeDomain === defaultPlatformDomain || activeDomain === 'localhost:5000'
-          ? undefined
-          : activeDomain,
+          domain: isPlatform ? undefined : activeDomain,
         };
       });
   };
@@ -662,7 +728,7 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
                       type="text"
                       value={customDomain}
                       onChange={(e) => handleDomainChange(e.target.value)}
-                      placeholder="localhost:5000"
+                      placeholder={isLocalEnv ? localPreset : deployPreset}
                       className="w-full bg-transparent px-1 py-1.5 font-code text-xs text-on-surface font-semibold outline-none"
                       title="Custom domain"
                     />
@@ -691,23 +757,37 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
 
                 {/* Quick Preset Domains */}
                 <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                  <span className="text-[11px] text-on-surface-variant">Domain Presets:</span>
-                  {[defaultPlatformDomain, 'gaurav.link', 'flow.to', 'brand.link']
-                    .filter((v, i, a) => a.indexOf(v) === i)
-                    .map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => handleDomainChange(preset)}
-                      className={`px-2 py-0.5 rounded text-[10px] font-code transition ${
-                        activeDomain === preset
-                          ? 'bg-primary text-on-primary font-bold'
-                          : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
-                      }`}
-                    >
-                      {preset}
-                    </button>
-                  ))}
+                  <span className="text-[11px] text-on-surface-variant font-medium">Domain Presets:</span>
+                  {domainPresets.map((preset) => {
+                    const isLocal = preset.includes('localhost');
+                    const isSelected = activeDomain.toLowerCase() === preset.toLowerCase();
+                    return (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => handleDomainChange(preset)}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-code transition flex items-center gap-1 border ${
+                          isSelected
+                            ? 'bg-primary text-on-primary border-primary font-bold shadow-sm'
+                            : 'bg-surface-container text-on-surface-variant border-outline-variant/20 hover:bg-surface-container-high hover:text-on-surface'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[13px]">
+                          {isLocal ? 'dns' : 'cloud'}
+                        </span>
+                        <span>{preset}</span>
+                        <span
+                          className={`text-[9px] px-1 py-0.2 rounded font-sans uppercase font-bold ${
+                            isSelected
+                              ? 'bg-white/20 text-white'
+                              : 'bg-surface-container-highest text-on-surface-variant'
+                          }`}
+                        >
+                          {isLocal ? 'Local' : 'Deploy'}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -999,31 +1079,155 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
                       <span className="material-symbols-outlined text-[12px]">lock</span> Protected
                     </span>
                   )}
-                  <span className="font-code text-[11px] text-tertiary bg-tertiary-fixed/30 px-2 py-0.5 rounded">
-                    Real-Time
-                  </span>
+                  {successUrl ? (
+                    <span className="font-code text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded flex items-center gap-1 font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span>Live &amp; Active</span>
+                    </span>
+                  ) : (
+                    <span className="font-code text-[10px] text-amber-700 dark:text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded flex items-center gap-1 font-semibold">
+                      <span className="material-symbols-outlined text-[12px]">edit_note</span>
+                      <span>Draft Preview</span>
+                    </span>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-3">
+                {/* Generated Short Link */}
                 <div>
-                  <span className="text-[11px] text-on-surface-variant block mb-1">Generated Short Link:</span>
-                  <div className="p-3 rounded-lg bg-surface-container-low border border-outline-variant/20 font-code text-xs text-primary font-bold flex items-center justify-between">
-                    <span className="truncate">{liveShortUrl}</span>
-                    <span className="material-symbols-outlined text-[16px] text-primary">arrow_forward</span>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] text-on-surface-variant">Generated Short Link:</span>
+                    {successUrl && (
+                      <span className="text-[10px] font-code text-emerald-600 dark:text-emerald-400 font-bold">
+                        HTTP 302 Route Ready
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-surface-container-low border border-outline-variant/20 flex items-center justify-between gap-2">
+                    <span className="font-code text-xs text-primary font-bold truncate select-all">
+                      {displayShortUrl}
+                    </span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(displayShortUrl);
+                          setPreviewCopied(true);
+                          setTimeout(() => setPreviewCopied(false), 2000);
+                        }}
+                        className="p-1.5 rounded hover:bg-surface-container text-on-surface-variant hover:text-primary transition"
+                        title={previewCopied ? 'Copied!' : 'Copy short link'}
+                      >
+                        <span className="material-symbols-outlined text-[16px]">
+                          {previewCopied ? 'check' : 'content_copy'}
+                        </span>
+                      </button>
+                      {successUrl ? (
+                        <a
+                          href={successUrl.short_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded bg-primary text-on-primary hover:bg-primary-container transition flex items-center justify-center shadow-sm"
+                          title="Open live short link in new tab"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (fullDestination) {
+                              window.open(fullDestination, '_blank');
+                            }
+                          }}
+                          className="p-1.5 rounded hover:bg-surface-container text-on-surface-variant hover:text-primary transition"
+                          title={fullDestination ? 'Preview destination site' : 'Enter destination on left'}
+                        >
+                          <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
+                {/* Target Destination */}
                 <div>
-                  <span className="text-[11px] text-on-surface-variant block mb-1">Target Destination:</span>
-                  <div className="p-3 rounded-lg bg-surface-container-low border border-outline-variant/20 font-code text-xs text-on-surface break-all min-h-[42px]">
-                    {fullDestination || <span className="text-outline italic">Enter destination URL on the left...</span>}
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] text-on-surface-variant">Target Destination:</span>
+                    {fullDestination && (
+                      <a
+                        href={fullDestination}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-primary hover:underline flex items-center gap-0.5"
+                      >
+                        <span>Visit Site</span>
+                        <span className="material-symbols-outlined text-[11px]">open_in_new</span>
+                      </a>
+                    )}
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-surface-container-low border border-outline-variant/20 font-code text-xs text-on-surface break-all min-h-[40px] flex items-center">
+                    {fullDestination ? (
+                      <span className="text-on-surface select-all">{fullDestination}</span>
+                    ) : (
+                      <span className="text-outline italic text-[11px]">Enter destination URL on the left...</span>
+                    )}
                   </div>
                 </div>
+
+                {/* Live Routing Pipeline Indicator */}
+                <div className="p-2.5 rounded-lg bg-surface-container-low/60 border border-outline-variant/20 flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider">
+                    <span className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[13px] text-primary">alt_route</span>
+                      <span>Instant 302 Redirection Route</span>
+                    </span>
+                    <span className="font-code font-bold text-tertiary">&lt; 15ms Edge</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] font-code text-on-surface overflow-hidden">
+                    <span className="truncate max-w-[130px] font-bold text-primary">
+                      /{customAlias.trim() || 'alias'}
+                    </span>
+                    <span className="text-tertiary font-bold shrink-0">──[ 302 ]──▶</span>
+                    <span className="truncate flex-1 text-on-surface-variant">
+                      {fullDestination ? (() => {
+                        try {
+                          return new URL(fullDestination).hostname;
+                        } catch {
+                          return 'destination';
+                        }
+                      })() : 'destination-site'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Action Button: Test Redirection */}
+                {successUrl ? (
+                  <a
+                    href={successUrl.short_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2 px-3 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold flex items-center justify-center gap-1.5 transition border border-primary/20"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">rocket_launch</span>
+                    <span>Test Live 302 Redirection (New Tab)</span>
+                  </a>
+                ) : fullDestination ? (
+                  <a
+                    href={fullDestination}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium flex items-center justify-center gap-1.5 transition border border-outline-variant/30"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                    <span>Verify Destination Site in New Tab</span>
+                  </a>
+                ) : null}
               </div>
             </div>
 
-            {/* Real-time Live QR Code Preview Card */}
+            {/* Real-time Dynamic QR Code Preview Card */}
             <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col items-center gap-3 text-center">
               <div className="w-full flex items-center justify-between pb-2 border-b border-outline-variant/20">
                 <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
@@ -1043,21 +1247,40 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
                 <div className="relative flex items-center justify-center">
                   <QRCodeSVG
                     id="preview-qr-code"
-                    value={liveShortUrl}
+                    value={qrTargetUrl}
                     size={160}
                     level="H"
                     includeMargin={false}
                   />
                   {/* Center Brand Badge */}
                   <div className="absolute inset-0 m-auto w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center border border-slate-200">
-                    <span className="text-[14px]">⚡</span>
+                    <span className="text-[14px]">{successUrl ? '⚡' : '🏠'}</span>
                   </div>
                 </div>
               </div>
 
-              <p className="text-[11px] text-on-surface-variant max-w-xs">
-                This QR code points to your link <strong className="font-code text-on-surface">/{customAlias || 'custom-name'}</strong> with instant 302 routing.
-              </p>
+              {/* Dynamic QR Context Explanation */}
+              {successUrl ? (
+                <div className="flex flex-col gap-0.5 text-center px-1">
+                  <span className="text-[11px] font-semibold text-tertiary flex items-center justify-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">verified</span>
+                    <span>Active Shortened Link QR</span>
+                  </span>
+                  <p className="text-[10px] text-on-surface-variant max-w-xs break-all">
+                    Points to <strong className="font-code text-on-surface">/{successUrl.short_code}</strong> with instant 302 routing to destination.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-0.5 text-center px-1">
+                  <span className="text-[11px] font-semibold text-primary flex items-center justify-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">home</span>
+                    <span>Default Homepage QR</span>
+                  </span>
+                  <p className="text-[10px] text-on-surface-variant max-w-xs">
+                    Normal download opens the project homepage. Deploy your custom link below to bind this QR directly to your destination.
+                  </p>
+                </div>
+              )}
 
               <div className="w-full flex flex-col gap-1.5">
                 <button
@@ -1066,7 +1289,7 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
                   className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm hover:shadow"
                 >
                   <span className="material-symbols-outlined text-[17px]">style</span>
-                  <span>Download Standee Poster (PNG)</span>
+                  <span>{successUrl ? 'Download Standee Poster (PNG)' : 'Download Homepage Poster (PNG)'}</span>
                 </button>
                 <button
                   type="button"
@@ -1074,7 +1297,7 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
                   className="w-full py-1.5 px-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface text-xs font-medium transition flex items-center justify-center gap-1.5 border border-outline-variant/30"
                 >
                   <span className="material-symbols-outlined text-[15px]">crop_free</span>
-                  <span>Plain QR Code</span>
+                  <span>{successUrl ? 'Plain QR Code' : 'Plain Homepage QR'}</span>
                 </button>
               </div>
             </div>

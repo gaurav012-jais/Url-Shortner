@@ -18,13 +18,18 @@ interface DomainEntry {
 }
 
 const getPlatformHost = (): string => {
+  const isLocal =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.includes('192.168.'));
   const saved = localStorage.getItem('linkflow_preferred_domain');
-  if (saved && saved !== 'localhost:5000') return saved;
+  if (saved) return saved;
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
     if (apiUrl) return new URL(apiUrl).host;
   } catch {}
-  return 'zelnk-backend.onrender.com';
+  return isLocal ? 'localhost:5000' : 'zelnk-backend.onrender.com';
 };
 
 export const SettingsView: React.FC<SettingsViewProps> = ({

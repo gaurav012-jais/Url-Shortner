@@ -13,7 +13,7 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 5000);
-  const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+  const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:5173,http://localhost:3000');
   const isProd = configService.get<string>('NODE_ENV') === 'production';
 
   // HTTP security headers
@@ -38,10 +38,11 @@ async function bootstrap() {
   );
 
   // Secure CORS Configuration
+  const configuredOrigins = frontendUrl.split(',').map((u) => u.trim());
   const allowedOrigins: (string | RegExp)[] = isProd
-    ? frontendUrl.split(',').map((u) => u.trim())
+    ? configuredOrigins
     : [
-        frontendUrl,
+        ...configuredOrigins,
         'http://localhost:5173',
         'http://localhost:3000',
         'http://127.0.0.1:5173',

@@ -4,20 +4,22 @@ import { Url } from '../urls/entities/url.entity';
 import { User } from '../users/entities/user.entity';
 import { RefreshToken } from '../auth/entities/refresh-token.entity';
 import { Click } from '../analytics/entities/click.entity';
+import { SystemSetting } from '../admin/entities/system-setting.entity';
 
 dotenv.config();
 
 const isProduction = process.env.NODE_ENV === 'production';
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL || process.env.DB_URL;
 const dbSsl = process.env.DB_SSL;
-const useSsl = dbSsl === 'true' || (isProduction && dbSsl !== 'false');
+const isCloudDb = databaseUrl && (databaseUrl.includes('supabase.co') || databaseUrl.includes('neon.tech') || databaseUrl.includes('pooler'));
+const useSsl = dbSsl === 'true' || isCloudDb || (isProduction && dbSsl !== 'false');
 
 export const AppDataSource = new DataSource(
   databaseUrl
     ? {
         type: 'postgres',
         url: databaseUrl,
-        entities: [Url, User, RefreshToken, Click],
+        entities: [Url, User, RefreshToken, Click, SystemSetting],
         migrations: [__dirname + '/../migrations/*{.ts,.js}'],
         ssl: useSsl ? { rejectUnauthorized: false } : false,
       }
@@ -28,9 +30,10 @@ export const AppDataSource = new DataSource(
         username: process.env.DB_USERNAME || 'postgres',
         password: process.env.DB_PASSWORD || 'postgrespassword',
         database: process.env.DB_NAME || 'url_shortener',
-        entities: [Url, User, RefreshToken, Click],
+        entities: [Url, User, RefreshToken, Click, SystemSetting],
         migrations: [__dirname + '/../migrations/*{.ts,.js}'],
         ssl: useSsl ? { rejectUnauthorized: false } : false,
       },
 );
+
 
