@@ -64,10 +64,8 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
   const deployPreset = getDeployDomain();
   const defaultPlatformDomain = getPlatformDefaultDomain();
 
-  // Presets: local host first if running locally, deploy domain first if on deploy
-  const domainPresets = isLocalEnv
-    ? [localPreset, deployPreset]
-    : [deployPreset, localPreset];
+  // Environment-specific presets: only local domain on localhost, only deployed domain on production
+  const domainPresets = isLocalEnv ? [localPreset] : [deployPreset];
 
   const homepageUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
 
@@ -768,25 +766,16 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
                         key={preset}
                         type="button"
                         onClick={() => handleDomainChange(preset)}
-                        className={`px-2.5 py-1 rounded-md text-[11px] font-code transition flex items-center gap-1 border ${
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-code transition flex items-center gap-1.5 border ${
                           isSelected
                             ? 'bg-primary text-on-primary border-primary font-bold shadow-sm'
                             : 'bg-surface-container text-on-surface-variant border-outline-variant/20 hover:bg-surface-container-high hover:text-on-surface'
                         }`}
                       >
-                        <span className="material-symbols-outlined text-[13px]">
-                          {isLocal ? 'dns' : 'cloud'}
+                        <span className="material-symbols-outlined text-[14px]">
+                          {isLocal ? 'dns' : 'language'}
                         </span>
                         <span>{preset}</span>
-                        <span
-                          className={`text-[9px] px-1 py-0.2 rounded font-sans uppercase font-bold ${
-                            isSelected
-                              ? 'bg-white/20 text-white'
-                              : 'bg-surface-container-highest text-on-surface-variant'
-                          }`}
-                        >
-                          {isLocal ? 'Local' : 'Deploy'}
-                        </span>
                       </button>
                     );
                   })}
