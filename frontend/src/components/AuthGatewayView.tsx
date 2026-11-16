@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { authApi } from '../services/api';
 import { User } from '../types';
+import { AuthIllustration } from './AuthIllustration';
 import { ZeLnkLogo } from './ZeLnkLogo';
 
 interface AuthGatewayViewProps {
@@ -12,7 +13,6 @@ export const AuthGatewayView: React.FC<AuthGatewayViewProps> = ({
   onSuccess,
   onContinueAsGuest,
 }) => {
-  // Access mode: 'account' (Sign in/register) or 'guest' (Temporary session)
   const [accessMode, setAccessMode] = useState<'account' | 'guest'>('account');
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
 
@@ -20,6 +20,8 @@ export const AuthGatewayView: React.FC<AuthGatewayViewProps> = ({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,10 +38,10 @@ export const AuthGatewayView: React.FC<AuthGatewayViewProps> = ({
           setLoading(false);
           return;
         }
-        const res = await authApi.register(name, email, password);
+        const res = await authApi.register(name.trim(), email.trim(), password);
         onSuccess(res.user);
       } else {
-        const res = await authApi.login(email, password);
+        const res = await authApi.login(email.trim(), password);
         onSuccess(res.user);
       }
     } catch (err: any) {
@@ -54,311 +56,305 @@ export const AuthGatewayView: React.FC<AuthGatewayViewProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-between p-4 sm:p-6 lg:p-8 relative overflow-hidden selection:bg-primary-fixed">
-      {/* Dynamic Background Mesh & Glowing Orbs */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-25"
-        style={{
-          backgroundImage:
-            'radial-gradient(rgba(99, 102, 241, 0.25) 1.2px, transparent 1.2px)',
-          backgroundSize: '24px 24px',
-        }}
-      />
-      {/* Top glowing violet orb */}
-      <div className="absolute -top-32 left-1/4 -translate-x-1/2 w-[34rem] h-[34rem] bg-gradient-to-br from-blue-600/25 via-indigo-600/20 to-purple-600/25 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse" />
-      {/* Bottom glowing cyan orb */}
-      <div className="absolute -bottom-32 right-1/4 w-[32rem] h-[32rem] bg-gradient-to-tl from-cyan-500/20 via-blue-600/20 to-violet-600/20 rounded-full blur-3xl pointer-events-none -z-10" />
+    <div className="min-h-screen bg-gradient-to-br from-[#EEF2FF] via-[#FAF5FF] to-[#FDF4FF] dark:from-[#0B091A] dark:via-[#100D28] dark:to-[#170C30] flex flex-col justify-between p-3 sm:p-5 lg:p-8 relative overflow-x-hidden selection:bg-indigo-500 selection:text-white">
+      {/* Background Soft Ambient Pastel Glow Orbs */}
+      <div className="absolute top-0 left-1/4 w-[36rem] h-[36rem] bg-indigo-400/15 dark:bg-indigo-600/10 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse" />
+      <div className="absolute bottom-0 right-1/4 w-[34rem] h-[34rem] bg-fuchsia-400/15 dark:bg-fuchsia-600/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
       {/* Top Header / Branding Bar */}
       <header className="w-full max-w-5xl mx-auto flex items-center justify-between py-2 z-10">
         <ZeLnkLogo size="md" />
-
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 text-[11px] text-tertiary font-medium shadow-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span>99.99% Routing SLA</span>
           </span>
         </div>
       </header>
 
-      {/* Centered Auth Card Container — Expanded Width to 580px */}
-      <main className="w-full max-w-xl mx-auto my-auto py-6 z-10">
-        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xl shadow-indigo-500/10 p-6 sm:p-9 relative transition-all">
-          {/* Brand Logo & Headline */}
-          <div className="text-center mb-6">
-            <ZeLnkLogo size="xl" className="justify-center mb-3" />
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-on-surface tracking-tight">
-              {accessMode === 'guest'
-                ? 'Quick Guest Access'
-                : authTab === 'login'
-                ? 'Welcome Back'
-                : 'Create Your ZeLnk Account'}
-            </h1>
-            <p className="text-xs text-on-surface-variant mt-1.5 max-w-sm mx-auto leading-relaxed">
-              Industrial URL shortening, custom vanity routing &amp; high-velocity traffic redirection
-            </p>
+      {/* Main Responsive Split Card (Desktop Left Form + Right Illustration, Mobile Stacked) */}
+      <main className="w-full max-w-4xl mx-auto my-auto py-4 sm:py-6 z-10">
+        <div className="bg-white dark:bg-slate-900 rounded-[28px] sm:rounded-[32px] shadow-[0_20px_60px_-15px_rgba(79,70,229,0.22)] border border-slate-200/80 dark:border-slate-800 overflow-hidden flex flex-col md:flex-row transition-all">
+          
+          {/* ───────────── MOBILE TOP BANNER (< md) ───────────── */}
+          <div className="block md:hidden w-full h-48 sm:h-56 relative overflow-hidden shrink-0">
+            <AuthIllustration />
+            <div className="absolute -bottom-1 left-0 right-0 h-5 bg-white dark:bg-slate-900 rounded-t-3xl z-10" />
           </div>
 
-          {/* Access Mode Segmented Cards — Wide & Clean (No Truncation) */}
-          <div className="mb-6">
-            <label className="block text-[11px] font-bold text-on-surface-variant mb-2 uppercase tracking-wider">
-              Select Access Option
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {/* Option 1: Standard Account */}
-              <button
-                type="button"
-                onClick={() => {
-                  setAccessMode('account');
-                  setError(null);
-                }}
-                className={`p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 ${
-                  accessMode === 'account'
-                    ? 'bg-blue-500/10 border-blue-600 shadow-sm ring-1 ring-blue-500/30'
-                    : 'bg-surface-container-low/70 border-outline-variant/30 hover:border-outline-variant text-on-surface-variant'
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+          {/* ───────────── LEFT FORM COLUMN (Desktop Left, Mobile Bottom) ───────────── */}
+          <div className="w-full md:w-1/2 p-6 sm:p-8 lg:p-10 flex flex-col justify-between bg-white dark:bg-slate-900 z-10 relative">
+            <div>
+              {/* Access Mode Badges */}
+              <div className="flex items-center gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccessMode('account');
+                    setError(null);
+                  }}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${
                     accessMode === 'account'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-surface-container text-on-surface-variant'
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[18px]">person</span>
-                </div>
-                <div>
-                  <span
-                    className={`font-bold text-xs sm:text-sm block ${
-                      accessMode === 'account' ? 'text-blue-700 dark:text-blue-300' : 'text-on-surface'
-                    }`}
-                  >
-                    Standard Account
-                  </span>
-                  <p className="text-[11px] text-on-surface-variant mt-0.5 leading-tight">
-                    Permanent links, custom vanity slugs &amp; telemetry
-                  </p>
-                </div>
-              </button>
-
-              {/* Option 2: Guest Mode */}
-              <button
-                type="button"
-                onClick={() => {
-                  setAccessMode('guest');
-                  setError(null);
-                }}
-                className={`p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 ${
-                  accessMode === 'guest'
-                    ? 'bg-amber-500/10 border-amber-500 shadow-sm ring-1 ring-amber-500/30'
-                    : 'bg-surface-container-low/70 border-outline-variant/30 hover:border-outline-variant text-on-surface-variant'
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                  <span className="material-symbols-outlined text-[14px]">person</span>
+                  <span>Standard Account</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccessMode('guest');
+                    setError(null);
+                  }}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${
                     accessMode === 'guest'
                       ? 'bg-amber-500 text-white shadow-sm'
-                      : 'bg-surface-container text-on-surface-variant'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[18px]">timer</span>
-                </div>
-                <div>
-                  <span
-                    className={`font-bold text-xs sm:text-sm block ${
-                      accessMode === 'guest' ? 'text-amber-700 dark:text-amber-300' : 'text-on-surface'
-                    }`}
-                  >
-                    Guest Mode
-                  </span>
-                  <p className="text-[11px] text-on-surface-variant mt-0.5 leading-tight">
-                    Instant test • Links expire after 15 minutes
-                  </p>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* --- CASE 1: GUEST MODE FORM --- */}
-          {accessMode === 'guest' ? (
-            <div className="flex flex-col gap-4 animate-fade-in">
-              {/* Expiration Notice Banner */}
-              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
-                <span className="material-symbols-outlined text-[22px] text-amber-500 shrink-0 mt-0.5">
-                  info
-                </span>
-                <div>
-                  <strong className="font-bold block text-sm mb-0.5">
-                    15-Minute Link Expiration
-                  </strong>
-                  Links generated in Guest mode automatically deactivate after{' '}
-                  <strong className="underline decoration-amber-500/50">15 minutes</strong>. If you register or log in later, your links are automatically upgraded to permanent!
-                </div>
-              </div>
-
-              {/* Guest Features */}
-              <div className="rounded-2xl bg-surface-container-low/60 p-4 border border-outline-variant/20 flex flex-col gap-2.5 text-xs text-on-surface-variant">
-                <div className="flex items-center gap-2.5">
-                  <span className="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
-                  <span>Zero registration or email required</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
-                  <span>Instant Base62 link shortening &amp; scannable QR codes</span>
-                </div>
-                <div className="flex items-center gap-2.5 text-amber-700 dark:text-amber-300">
-                  <span className="material-symbols-outlined text-[16px] text-amber-500">timer</span>
-                  <span>Temporary session: links expire in 15 minutes</span>
-                </div>
-              </div>
-
-              {/* Enter as Guest CTA Button */}
-              <button
-                type="button"
-                onClick={onContinueAsGuest}
-                className="w-full h-11 px-4 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/25 active:scale-[0.99]"
-              >
-                <span>Continue as Guest</span>
-                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setAccessMode('account')}
-                className="text-center text-xs text-on-surface-variant hover:text-primary transition py-1"
-              >
-                Prefer permanent links? <span className="font-semibold text-primary underline">Sign In or Register</span>
-              </button>
-            </div>
-          ) : (
-            /* --- CASE 2: STANDARD ACCOUNT (SIGN IN / REGISTER) --- */
-            <div className="flex flex-col gap-4 animate-fade-in">
-              {/* Sign In vs Register Segmented Control */}
-              <div className="flex rounded-xl bg-surface-container-low p-1 border border-outline-variant/30">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthTab('login');
-                    setError(null);
-                  }}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                    authTab === 'login'
-                      ? 'bg-surface-container-lowest text-primary shadow-sm'
-                      : 'text-on-surface-variant hover:text-on-surface'
-                  }`}
-                >
-                  Sign In
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthTab('register');
-                    setError(null);
-                  }}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                    authTab === 'register'
-                      ? 'bg-surface-container-lowest text-primary shadow-sm'
-                      : 'text-on-surface-variant hover:text-on-surface'
-                  }`}
-                >
-                  Create Account
+                  <span className="material-symbols-outlined text-[14px]">timer</span>
+                  <span>Guest Mode</span>
                 </button>
               </div>
 
-              {/* Error Alert */}
+              {/* Title & Subtitle */}
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                {accessMode === 'guest'
+                  ? 'Quick Guest Access'
+                  : authTab === 'login'
+                  ? 'Sign In to your Account'
+                  : 'Create your Account'}
+              </h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-5">
+                {accessMode === 'guest'
+                  ? 'Zero registration required. Generate short links immediately (auto-expires in 15 mins).'
+                  : authTab === 'login'
+                  ? 'Welcome back! Enter your credentials to access your permanent links.'
+                  : 'Start creating permanent short links, custom vanity slugs & analytics.'}
+              </p>
+
+              {/* Error Banner */}
               {error && (
-                <div className="p-3.5 rounded-xl bg-error-container/60 border border-error text-on-error-container text-xs font-medium flex items-center gap-2 animate-shake">
-                  <span className="material-symbols-outlined text-[18px] text-error shrink-0">error</span>
+                <div className="p-3 mb-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-700 dark:text-red-300 text-xs font-medium flex items-center gap-2 animate-fade-in">
+                  <span className="material-symbols-outlined text-[16px] text-red-600 shrink-0">error</span>
                   <span>{error}</span>
                 </div>
               )}
 
-              {/* Form Fields */}
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {authTab === 'register' && (
-                  <div>
-                    <label className="block text-[11px] font-semibold text-on-surface mb-1">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Gaurav Sharma"
-                      className="w-full h-11 px-3.5 bg-surface-container-low border border-outline-variant/30 rounded-xl text-xs sm:text-sm text-on-surface outline-none focus:border-primary focus:ring-1 focus:ring-primary transition"
-                    />
+              {/* ───────────── CASE 1: GUEST MODE ───────────── */}
+              {accessMode === 'guest' ? (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+                    <span className="material-symbols-outlined text-[20px] text-amber-500 shrink-0 mt-0.5">
+                      info
+                    </span>
+                    <div>
+                      <strong className="font-bold block text-xs mb-0.5">15-Minute Link Expiration</strong>
+                      Guest links automatically deactivate after 15 minutes. Sign in anytime to upgrade them to permanent!
+                    </div>
                   </div>
-                )}
 
-                <div>
-                  <label className="block text-[11px] font-semibold text-on-surface mb-1">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="user@example.com"
-                    className="w-full h-11 px-3.5 bg-surface-container-low border border-outline-variant/30 rounded-xl text-xs sm:text-sm text-on-surface outline-none focus:border-primary focus:ring-1 focus:ring-primary transition"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-semibold text-on-surface">Password</label>
-                    {authTab === 'login' && (
-                      <span className="text-[10px] text-on-surface-variant hover:underline cursor-pointer">
-                        Forgot password?
+                  <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3.5 border border-slate-200/80 dark:border-slate-700/60 flex flex-col gap-2 text-xs text-slate-600 dark:text-slate-400">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[15px] text-emerald-600 dark:text-emerald-400">
+                        check_circle
                       </span>
-                    )}
+                      <span>No sign-up or credit card required</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[15px] text-emerald-600 dark:text-emerald-400">
+                        check_circle
+                      </span>
+                      <span>Instant 302 routing &amp; live scannable QR codes</span>
+                    </div>
                   </div>
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full h-11 px-3.5 bg-surface-container-low border border-outline-variant/30 rounded-xl text-xs sm:text-sm text-on-surface outline-none focus:border-primary focus:ring-1 focus:ring-primary transition"
-                  />
+
+                  <button
+                    type="button"
+                    onClick={onContinueAsGuest}
+                    className="w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-amber-500/25 active:scale-[0.99] flex items-center justify-center gap-2"
+                  >
+                    <span>CONTINUE AS GUEST</span>
+                    <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                  </button>
                 </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full h-11 px-4 mt-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-500/25 active:scale-[0.99] disabled:opacity-60"
-                >
-                  {loading ? (
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <span>{authTab === 'login' ? 'Sign In to ZeLnk' : 'Create Free Account'}</span>
+              ) : (
+                /* ───────────── CASE 2: STANDARD ACCOUNT FORM ───────────── */
+                <form onSubmit={handleSubmit} className="space-y-3.5 animate-fade-in">
+                  {/* Full Name field (Register mode only) */}
+                  {authTab === 'register' && (
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Full Name
+                      </label>
+                      <div className="relative flex items-center">
+                        <span className="material-symbols-outlined absolute left-3 text-[18px] text-slate-400 pointer-events-none">
+                          person
+                        </span>
+                        <input
+                          type="text"
+                          required
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="Enter Full Name"
+                          className="w-full h-10 pl-9 pr-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/15 transition-all"
+                        />
+                      </div>
+                    </div>
                   )}
-                </button>
-              </form>
 
-              {/* Bottom Quick Switch to Guest */}
-              <div className="pt-2 text-center border-t border-outline-variant/20">
+                  {/* Email field */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Email
+                    </label>
+                    <div className="relative flex items-center">
+                      <span className="material-symbols-outlined absolute left-3 text-[18px] text-slate-400 pointer-events-none">
+                        mail
+                      </span>
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Enter Email"
+                        className="w-full h-10 pl-9 pr-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/15 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password field with Eye Toggle & Forgot Link */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Password
+                      </label>
+                      {authTab === 'login' ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setError('For self-hosted admin access, use your configured admin password in .env');
+                          }}
+                          className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                        >
+                          Forgot password?
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 font-code">Min 6 chars</span>
+                      )}
+                    </div>
+                    <div className="relative flex items-center">
+                      <span className="material-symbols-outlined absolute left-3 text-[18px] text-slate-400 pointer-events-none">
+                        lock
+                      </span>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        minLength={6}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter Password"
+                        className="w-full h-10 pl-9 pr-10 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/15 transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2.5 p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition"
+                        title={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        <span className="material-symbols-outlined text-[18px]">
+                          {showPassword ? 'visibility_off' : 'visibility'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Remember Me Checkbox */}
+                  <div className="flex items-center justify-between pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                      />
+                      <span className="text-xs text-slate-600 dark:text-slate-400">Remember me</span>
+                    </label>
+                  </div>
+
+                  {/* Vibrant Action Button */}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full h-11 mt-2 rounded-xl bg-gradient-to-r from-[#3B82F6] via-[#4F46E5] to-[#6366F1] hover:from-[#2563EB] hover:to-[#4F46E5] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-indigo-500/25 active:scale-[0.99] disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Signing In...</span>
+                      </>
+                    ) : (
+                      <span>{authTab === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'}</span>
+                    )}
+                  </button>
+                </form>
+              )}
+            </div>
+
+            {/* Bottom Switcher */}
+            <div className="pt-5 border-t border-slate-100 dark:border-slate-800 text-center">
+              {accessMode === 'guest' ? (
                 <button
                   type="button"
-                  onClick={() => setAccessMode('guest')}
-                  className="text-xs text-on-surface-variant hover:text-primary transition inline-flex items-center gap-1"
+                  onClick={() => setAccessMode('account')}
+                  className="text-xs text-slate-500 dark:text-slate-400 hover:text-indigo-600 transition"
                 >
-                  <span>Just exploring?</span>
-                  <span className="font-semibold text-primary underline">
-                    Continue as Guest (15m links)
-                  </span>
+                  Prefer permanent links? <strong className="text-indigo-600 dark:text-indigo-400 font-bold underline">Sign In or Register</strong>
                 </button>
-              </div>
+              ) : authTab === 'login' ? (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Not registered yet?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthTab('register');
+                      setError(null);
+                    }}
+                    className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    Create an account
+                  </button>
+                </p>
+              ) : (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Already have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthTab('login');
+                      setError(null);
+                    }}
+                    className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    Sign In
+                  </button>
+                </p>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* ───────────── RIGHT ILLUSTRATION COLUMN (Desktop md+ only) ───────────── */}
+          <div className="hidden md:block w-1/2 relative min-h-[480px]">
+            <AuthIllustration />
+          </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="w-full max-w-5xl mx-auto py-3 text-center text-xs text-on-surface-variant z-10">
-        <p>&copy; {new Date().getFullYear()} ZeLnk Platform. All rights reserved.</p>
+      <footer className="w-full max-w-5xl mx-auto py-3 text-center text-xs text-slate-400 dark:text-slate-500 z-10">
+        <p>&copy; {new Date().getFullYear()} ZeLnk Cloud Platform. Ultra-fast 302 vanity routing.</p>
       </footer>
     </div>
   );
