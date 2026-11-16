@@ -16,7 +16,7 @@ import { customAlphabet } from 'nanoid';
 import * as QRCode from 'qrcode';
 import * as bcrypt from 'bcrypt';
 import { Url } from './entities/url.entity';
-import { User, UserRole } from '../users/entities/user.entity';
+import { User, UserRole, SubscriptionPlan } from '../users/entities/user.entity';
 import { CreateUrlDto } from './dto/create-url.dto';
 import { BulkCreateUrlDto } from './dto/bulk-create-url.dto';
 import { UrlResponseDto } from './dto/url-response.dto';
@@ -145,6 +145,33 @@ export class UrlsService implements OnModuleInit, OnModuleDestroy {
       throw new BadRequestException(
         'Platform is in maintenance mode. Link creation is temporarily suspended.',
       );
+    }
+
+    // Prevent self-referential redirect loops & internal shortener chaining
+    try {
+      const parsedOriginal = new URL(original_url);
+      const originalHost = parsedOriginal.host.toLowerCase();
+      let baseHost = 'localhost:5000';
+      try {
+        baseHost = new URL(this.baseUrl).host.toLowerCase();
+      } catch {}
+
+      const blockedSelfHosts = [
+        baseHost,
+        'localhost:5000',
+        'localhost:3000',
+        'localhost:5173',
+        'zelnk.onrender.com',
+        'zelnk-backend.onrender.com',
+      ];
+
+      if (blockedSelfHosts.includes(originalHost)) {
+        throw new BadRequestException(
+          'Cannot shorten URLs that point back to this URL shortener (redirect loop protection).',
+        );
+      }
+    } catch (err: any) {
+      if (err instanceof BadRequestException) throw err;
     }
 
     if (!userId && custom_alias && settings && !settings.allow_custom_alias_free) {
@@ -319,6 +346,25 @@ export class UrlsService implements OnModuleInit, OnModuleDestroy {
     success_count: number;
     failure_count: number;
   }> {
+    // Enforce subscription plan limits for bulk operations
+    let maxAllowed = 10; // Default limit for Guest and Free Starter
+    if (userId) {
+      const user = await this.usersRepo.findOne({ where: { id: userId } });
+      if (user) {
+        if (user.role === UserRole.ADMIN || user.plan === SubscriptionPlan.ENTERPRISE) {
+          maxAllowed = 500;
+        } else if (user.plan === SubscriptionPlan.PRO) {
+          maxAllowed = 100;
+        }
+      }
+    }
+
+    if (bulkDto.urls.length > maxAllowed) {
+      throw new BadRequestException(
+        `Your current plan allows bulk shortening of up to ${maxAllowed} URLs at a time. Upgrade your plan to shorten larger batches.`,
+      );
+    }
+
     const created: UrlResponseDto[] = [];
     const failed: { original_url: string; reason: string }[] = [];
 
@@ -501,20 +547,20 @@ export class UrlsService implements OnModuleInit, OnModuleDestroy {
     }
 
     const newAttempts = (url.failed_password_attempts || 0) + 1;
-    const isBlocked = newAttempts >= 10;
 
+    // Do NOT disable the URL globally (prevents DoS attacks by anonymous strangers on other users' links).
+    // IP-level brute-force throttling is enforced in RedirectsController.
     await this.urlsRepository.update(
       { id: urlId },
       {
         failed_password_attempts: newAttempts,
-        ...(isBlocked ? { is_active: false } : {}),
       },
     );
 
     return {
       failedAttempts: newAttempts,
-      isBlocked,
-      remainingAttempts: Math.max(0, 10 - newAttempts),
+      isBlocked: false,
+      remainingAttempts: Math.max(0, 10 - (newAttempts % 10)),
     };
   }
 

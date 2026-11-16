@@ -80,9 +80,10 @@ export class AnalyticsService {
         }
       }
 
-      // Anonymize IP
+      // Anonymize IP with keyed HMAC using access secret as salt to prevent rainbow table de-anonymization
+      const salt = this.configService.get<string>('JWT_ACCESS_SECRET') || 'zelnk_secret_salt_2026';
       const ip_hash = ip
-        ? crypto.createHash('sha256').update(ip).digest('hex').substring(0, 32)
+        ? crypto.createHmac('sha256', salt).update(ip).digest('hex').substring(0, 32)
         : null;
 
       const click = this.clicksRepository.create({
@@ -101,6 +102,44 @@ export class AnalyticsService {
   }
 
   async getOverview(userId?: string, userRole?: string) {
+    // Template for 7 days
+    const past7Days: { date: string; clicks: number }[] = [];
+    const now = new Date();
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      past7Days.push({ date: dateStr, clicks: 0 });
+    }
+
+    const deviceDistribution = [
+      { name: 'Desktop', value: 0 },
+      { name: 'Mobile', value: 0 },
+      { name: 'Tablet', value: 0 },
+    ];
+
+    const browserDistribution = [
+      { name: 'Chrome', value: 0 },
+      { name: 'Safari', value: 0 },
+      { name: 'Firefox', value: 0 },
+      { name: 'Edge', value: 0 },
+      { name: 'Other', value: 0 },
+    ];
+
+    // Data Privacy Guard: Unauthenticated visitors must NEVER see system-wide stats or private links
+    if (!userId && userRole !== 'admin') {
+      return {
+        totalLinks: 0,
+        totalClicks: 0,
+        activeLinks: 0,
+        clickVolumeTrend: past7Days,
+        deviceDistribution,
+        browserDistribution,
+        topLinks: [],
+      };
+    }
+
     const urlWhere: any = {};
     if (userId && userRole !== 'admin') {
       urlWhere.user_id = userId;
@@ -120,31 +159,6 @@ export class AnalyticsService {
     const totalClicks = urls.reduce((sum, u) => sum + u.clicks_count, 0);
 
     const urlIds = urls.map((u) => u.id);
-
-    // Calculate Past 7 Days Trend
-    const past7Days: { date: string; clicks: number }[] = [];
-    const now = new Date();
-
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      past7Days.push({ date: dateStr, clicks: 0 });
-    }
-
-    let deviceDistribution = [
-      { name: 'Desktop', value: 0 },
-      { name: 'Mobile', value: 0 },
-      { name: 'Tablet', value: 0 },
-    ];
-
-    let browserDistribution = [
-      { name: 'Chrome', value: 0 },
-      { name: 'Safari', value: 0 },
-      { name: 'Firefox', value: 0 },
-      { name: 'Edge', value: 0 },
-      { name: 'Other', value: 0 },
-    ];
 
     if (urlIds.length > 0) {
       const sevenDaysAgo = new Date();

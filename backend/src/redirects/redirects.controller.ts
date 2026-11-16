@@ -68,12 +68,13 @@ export class RedirectsController {
   }
 
   private getClientIp(req: Request): string {
+    if (req.ip) return req.ip;
     const forwarded = req.headers['x-forwarded-for'] as string | undefined;
     if (forwarded) {
       const ips = forwarded.split(',').map((s) => s.trim()).filter(Boolean);
-      return ips[ips.length - 1] || req.ip || req.socket?.remoteAddress || '127.0.0.1';
+      return ips[0] || req.socket?.remoteAddress || '127.0.0.1';
     }
-    return req.ip || req.socket?.remoteAddress || '127.0.0.1';
+    return req.socket?.remoteAddress || '127.0.0.1';
   }
 
   @Get()
@@ -132,22 +133,19 @@ export class RedirectsController {
 
       // Password Protection check
       if (url.password_hash) {
-        // 1. Check if the link is already permanently locked due to >= 10 failed attempts
-        if ((url.failed_password_attempts || 0) >= 10 || !url.is_active) {
+        if (!url.is_active) {
           return res.status(HttpStatus.GONE).send(
             this.renderErrorPage(
-              'Link Locked (410)',
-              'This protected link has been permanently locked because 10 consecutive failed passcode attempts were exceeded.',
+              'Link Inactive (410)',
+              'This short link has been deactivated by the owner.',
             ),
           );
         }
 
-        const remainingAttempts = Math.max(0, 10 - (url.failed_password_attempts || 0));
-
         // Passwords must NEVER be passed in URL query strings (prevents exposure in access logs, CDN logs, & Referer).
         // Protected links always render the password challenge form; verification is handled via POST body.
         return res.send(
-          this.renderPasswordPage(shortCode, undefined, remainingAttempts),
+          this.renderPasswordPage(shortCode, undefined),
         );
       }
 
@@ -247,12 +245,11 @@ export class RedirectsController {
         return res.redirect(HttpStatus.FOUND, url.original_url);
       }
 
-      // 1. Check if the link is already permanently locked due to >= 10 failed attempts
-      if ((url.failed_password_attempts || 0) >= 10 || !url.is_active) {
+      if (!url.is_active) {
         return res.status(HttpStatus.GONE).send(
           this.renderErrorPage(
-            'Link Locked (410)',
-            'This protected link has been permanently locked because 10 consecutive failed passcode attempts were exceeded.',
+            'Link Inactive (410)',
+            'This short link has been deactivated by the owner.',
           ),
         );
       }
@@ -279,31 +276,19 @@ export class RedirectsController {
           this.renderPasswordPage(
             shortCode,
             'Passcode cannot exceed 100 characters.',
-            Math.max(0, 10 - (url.failed_password_attempts || 0)),
           ),
         );
       }
       const isMatch = await bcrypt.compare(submittedPassword, url.password_hash);
 
       if (!isMatch) {
-        // Record failed attempt and check 10-attempt threshold
-        const attemptResult = await this.urlsService.recordFailedPasswordAttempt(url.id);
-        if (attemptResult.isBlocked) {
-          return res.status(HttpStatus.GONE).send(
-            this.renderErrorPage(
-              'Link Locked (410)',
-              'Security Alert: This link has been permanently locked because 10 consecutive incorrect passcode attempts were recorded.',
-            ),
-          );
-        }
+        // Record failed attempt for auditing/owner telemetry without deactivating the link globally
+        await this.urlsService.recordFailedPasswordAttempt(url.id);
 
         return res.send(
           this.renderPasswordPage(
             shortCode,
-            `Incorrect passcode. ${attemptResult.remainingAttempts} ${
-              attemptResult.remainingAttempts === 1 ? 'attempt' : 'attempts'
-            } remaining before this link is blocked.`,
-            attemptResult.remainingAttempts,
+            'Incorrect passcode. Please check the passcode and try again.',
           ),
         );
       }
@@ -498,7 +483,7 @@ export class RedirectsController {
             <input type="password" name="password" placeholder="Enter link passcode" required autofocus autocomplete="current-password" />
             <button type="submit">Unlock &amp; Proceed &rarr;</button>
           </form>
-          <span class="badge">Brute-Force Protected &bull; 10 Attempt Security Limit</span>
+          <span class="badge">Brute-Force Protected &bull; Rate-Limited Security Guard</span>
         </div>
       </body>
       </html>

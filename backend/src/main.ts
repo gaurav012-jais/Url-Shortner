@@ -11,6 +11,10 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  // Trust first proxy (Render, Cloudflare, AWS ALB) for accurate client IP resolution
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', 1);
+
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 5000);
   const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:5173,http://localhost:3000');

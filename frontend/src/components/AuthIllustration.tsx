@@ -211,3 +211,4 @@ export const AuthIllustration: React.FC<AuthIllustrationProps> = ({ className = 
     </div>
   );
 };
+

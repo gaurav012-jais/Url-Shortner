@@ -355,11 +355,24 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
     setTimeout(() => setCopiedBulk(false), 2000);
   };
 
+  const sanitizeCsvCell = (val: string | null | undefined): string => {
+    if (!val) return '""';
+    let str = String(val);
+    // Neutralize spreadsheet formula injection triggers: =, +, -, @, \t, \r
+    if (/^[=+\-@\t\r]/.test(str)) {
+      str = `'${str}`;
+    }
+    return `"${str.replace(/"/g, '""')}"`;
+  };
+
   const handleDownloadBulkCsv = () => {
     if (!bulkResult || bulkResult.created.length === 0) return;
     const csvContent = [
       'Original URL,Custom Alias,Short URL',
-      ...bulkResult.created.map((c) => `"${c.original_url}","${c.short_code}","${c.short_url}"`),
+      ...bulkResult.created.map(
+        (c) =>
+          `${sanitizeCsvCell(c.original_url)},${sanitizeCsvCell(c.short_code)},${sanitizeCsvCell(c.short_url)}`,
+      ),
     ].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const u = URL.createObjectURL(blob);

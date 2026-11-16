@@ -32,16 +32,25 @@ export const LinksListView: React.FC<LinksListViewProps> = ({
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
 
+  const sanitizeCsvCell = (val: string | null | undefined): string => {
+    if (!val) return '""';
+    let str = String(val);
+    if (/^[=+\-@\t\r]/.test(str)) {
+      str = `'${str}`;
+    }
+    return `"${str.replace(/"/g, '""')}"`;
+  };
+
   const handleExportCsv = () => {
     if (urls.length === 0) return;
     const headers = ['Short Code', 'Short URL', 'Original Destination', 'Clicks', 'Status', 'Tags', 'Created At'];
     const rows = urls.map((u) => [
-      `"${u.short_code}"`,
-      `"${u.short_url}"`,
-      `"${u.original_url.replace(/"/g, '""')}"`,
+      sanitizeCsvCell(u.short_code),
+      sanitizeCsvCell(u.short_url),
+      sanitizeCsvCell(u.original_url),
       u.clicks_count,
-      u.is_expired ? 'Expired' : u.is_active ? 'Active' : 'Disabled',
-      `"${(u.tags || []).join(', ')}"`,
+      u.is_expired ? '"Expired"' : u.is_active ? '"Active"' : '"Disabled"',
+      sanitizeCsvCell((u.tags || []).join(', ')),
       `"${new Date(u.created_at).toISOString()}"`,
     ]);
 
