@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import { urlApi } from '../services/api';
-import { UrlItem } from '../types';
+import { UrlItem, User } from '../types';
 import { ZeLnkLogo } from './ZeLnkLogo';
 
 interface LandingPageViewProps {
   onOpenConsole: () => void;
   onOpenAuth: () => void;
   onLinkCreated: (link: UrlItem) => void;
+  currentUser?: User | null;
+  isGuestSession?: boolean;
 }
 
 export const LandingPageView: React.FC<LandingPageViewProps> = ({
   onOpenConsole,
   onOpenAuth,
   onLinkCreated,
+  currentUser,
+  isGuestSession,
 }) => {
   const [targetUrl, setTargetUrl] = useState('');
   const [customSlug, setCustomSlug] = useState('');
@@ -77,26 +81,50 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
           {/* Right Action CTAs */}
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            <div className="hidden lg:flex items-center space-x-2 text-tertiary bg-tertiary-container/15 px-3 py-1 rounded-full text-xs font-semibold">
-              <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
-              <span>PostgreSQL Edge Live</span>
-            </div>
+            {currentUser ? (
+              <div className="flex items-center gap-2">
+                <span className="hidden sm:inline text-xs font-semibold text-on-surface truncate max-w-[120px]">
+                  {currentUser.name}
+                </span>
+                <button
+                  onClick={onOpenConsole}
+                  className="px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-semibold text-xs shadow-sm transition flex items-center gap-1 active:scale-95"
+                >
+                  <span>Dashboard</span>
+                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </button>
+              </div>
+            ) : isGuestSession ? (
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/30">
+                  Guest
+                </span>
+                <button
+                  onClick={onOpenConsole}
+                  className="px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-semibold text-xs shadow-sm transition flex items-center gap-1 active:scale-95"
+                >
+                  <span>Dashboard</span>
+                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={onOpenAuth}
+                  className="text-xs font-semibold text-on-surface-variant hover:text-on-surface px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low transition-colors whitespace-nowrap shrink-0"
+                >
+                  Sign In
+                </button>
 
-            <button
-              onClick={onOpenAuth}
-              className="text-xs font-semibold text-on-surface-variant hover:text-on-surface px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low transition-colors whitespace-nowrap shrink-0"
-            >
-              Sign In
-            </button>
-
-            <button
-              onClick={onOpenConsole}
-              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-semibold text-xs shadow-sm transition flex items-center gap-1 sm:gap-1.5 whitespace-nowrap active:scale-95 shrink-0"
-            >
-              <span>Launch</span>
-              <span className="hidden xs:inline">Console</span>
-              <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
-            </button>
+                <button
+                  onClick={onOpenConsole}
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-semibold text-xs shadow-sm transition flex items-center gap-1 sm:gap-1.5 whitespace-nowrap active:scale-95 shrink-0"
+                >
+                  <span>Get Started</span>
+                  <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -106,13 +134,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col items-center text-center relative z-10">
           {/* Status badge */}
           <div className="inline-flex items-center gap-2 bg-surface-container-high px-3 py-1 rounded-full shadow-sm mb-4 sm:mb-6 border border-outline-variant/30 max-w-full overflow-hidden">
-            <span className="w-2 h-2 rounded-full bg-tertiary animate-ping shrink-0"></span>
+            <span className="w-2 h-2 rounded-full bg-tertiary shrink-0"></span>
             <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-on-surface truncate">
-              Industrial Routing Engine
-            </span>
-            <span className="hidden xs:inline text-on-surface-variant">&bull;</span>
-            <span className="hidden xs:inline text-[11px] sm:text-xs text-primary font-medium truncate">
-              PostgreSQL &amp; Redis Active
+              Fast &amp; Simple Link Shortener
             </span>
           </div>
 
@@ -124,7 +148,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           </h1>
 
           <p className="text-xs sm:text-base text-on-surface-variant max-w-2xl mb-6 sm:mb-10 leading-relaxed px-2">
-            Industrial URL infrastructure engineered for latency-critical redirects, custom vanity slugs, real-time analytics, and instant dynamic QR codes.
+            Create clean, branded short links with custom aliases, track your visitor clicks, and generate scannable QR codes instantly.
           </p>
 
           {/* Quick Shorten Bar (Live Interactive Demo) */}

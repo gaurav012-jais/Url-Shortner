@@ -267,6 +267,8 @@ export const App: React.FC = () => {
             onOpenMobileNav={() => setIsMobileNavOpen(true)}
             activeView={activeTab}
             onNavigate={(view) => setActiveTab(view)}
+            onRefresh={() => fetchUrls()}
+            isRefreshing={loading}
           />
         )}
 
@@ -278,6 +280,8 @@ export const App: React.FC = () => {
                 onOpenConsole={() => setActiveTab('create-link')}
                 onOpenAuth={() => setIsAuthModalOpen(true)}
                 onLinkCreated={handleLinkCreated}
+                currentUser={currentUser}
+                isGuestSession={isGuestSession}
               />
             )}
 

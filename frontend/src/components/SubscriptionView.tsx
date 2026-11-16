@@ -497,9 +497,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                         <span>
                           {plan.id === 'free'
                             ? 'Switch to Free'
-                            : currentUser
-                            ? `Select ${plan.name}`
-                            : 'Sign In to Select'}
+                            : `Select ${plan.name}`}
                         </span>
                       </>
                     )}

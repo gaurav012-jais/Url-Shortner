@@ -21,7 +21,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const baseNavItems = [
     { id: 'overview', label: 'Overview', icon: 'space_dashboard' },
-    { id: 'landing', label: 'Landing Page', icon: 'public' },
     { id: 'create-link', label: 'Create Link', icon: 'add_circle' },
     { id: 'links', label: 'Links', icon: 'link' },
     { id: 'qr-codes', label: 'QR Codes', icon: 'qr_code_2' },

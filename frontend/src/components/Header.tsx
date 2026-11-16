@@ -11,6 +11,8 @@ interface HeaderProps {
   onOpenMobileNav?: () => void;
   activeView?: string;
   onNavigate?: (view: string) => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -22,6 +24,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMobileNav,
   activeView,
   onNavigate,
+  onRefresh,
+  isRefreshing,
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showGuestDropdown, setShowGuestDropdown] = useState(false);
@@ -65,6 +69,24 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right Controls: Telemetry + Top-Corner Account Status */}
       <div className="flex items-center gap-2 shrink-0">
+        {/* Instant Refresh Button with Spin Animation */}
+        {onRefresh && (
+          <button
+            type="button"
+            onClick={onRefresh}
+            className="p-1.5 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container transition flex items-center justify-center active:scale-95"
+            title="Refresh links and statistics"
+          >
+            <span
+              className={`material-symbols-outlined text-[18px] transition-transform duration-500 ${
+                isRefreshing ? 'animate-spin text-primary' : ''
+              }`}
+            >
+              refresh
+            </span>
+          </button>
+        )}
+
         {/* Telemetry Indicator (Desktop) */}
         <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-tertiary-container/15 text-tertiary text-[11px] font-semibold">
           <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse" />
