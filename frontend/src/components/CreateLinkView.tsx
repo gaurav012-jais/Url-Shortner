@@ -13,7 +13,7 @@ interface CreateLinkViewProps {
 }
 
 const LOCAL_DOMAIN = 'localhost:5000';
-const DEPLOYED_DOMAIN = 'zelnk-backend.onrender.com';
+const DEPLOYED_DOMAIN = 'zelnk.onrender.com';
 
 const isRunningLocally = (): boolean => {
   if (typeof window === 'undefined') return true;
@@ -192,6 +192,7 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
       activeDomain === localPreset ||
       activeDomain === deployPreset ||
       activeDomain === 'localhost:5000' ||
+      activeDomain === 'zelnk.onrender.com' ||
       activeDomain === 'zelnk-backend.onrender.com';
 
     const payload: CreateUrlPayload = {
@@ -300,6 +301,7 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
           activeDomain === localPreset ||
           activeDomain === deployPreset ||
           activeDomain === 'localhost:5000' ||
+          activeDomain === 'zelnk.onrender.com' ||
           activeDomain === 'zelnk-backend.onrender.com';
         return {
           original_url: url,

@@ -188,6 +188,7 @@ export class UrlsService implements OnModuleInit, OnModuleDestroy {
       cleanDomain !== defaultHost &&
       cleanDomain !== 'localhost:5000' &&
       cleanDomain !== 'localhost' &&
+      cleanDomain !== 'zelnk.onrender.com' &&
       cleanDomain !== 'zelnk-backend.onrender.com'
     );
 

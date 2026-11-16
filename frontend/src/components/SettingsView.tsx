@@ -29,7 +29,7 @@ const getPlatformHost = (): string => {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
     if (apiUrl) return new URL(apiUrl).host;
   } catch {}
-  return isLocal ? 'localhost:5000' : 'zelnk-backend.onrender.com';
+  return isLocal ? 'localhost:5000' : 'zelnk.onrender.com';
 };
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
