@@ -75,14 +75,31 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   const activeRatio = totalLinks > 0 ? ((activeCount / totalLinks) * 100).toFixed(1) : '100.0';
   const avgClicks = totalLinks > 0 ? (totalClicks / totalLinks).toFixed(1) : '0.0';
 
-  const chartData = analytics?.clickVolumeTrend || [
-    { date: 'Mon', clicks: 2 },
-    { date: 'Tue', clicks: 5 },
-    { date: 'Wed', clicks: 12 },
-    { date: 'Thu', clicks: 8 },
-    { date: 'Fri', clicks: 15 },
-    { date: 'Sat', clicks: 9 },
+  const defaultPast7Days = [
+    { date: 'Mon', clicks: 0 },
+    { date: 'Tue', clicks: 0 },
+    { date: 'Wed', clicks: 0 },
+    { date: 'Thu', clicks: 0 },
+    { date: 'Fri', clicks: 0 },
+    { date: 'Sat', clicks: 0 },
     { date: 'Sun', clicks: totalClicks },
+  ];
+
+  const chartData =
+    analytics && analytics.clickVolumeTrend && analytics.clickVolumeTrend.length > 0
+      ? analytics.clickVolumeTrend
+      : defaultPast7Days;
+
+  const deviceDistribution = analytics?.deviceDistribution || [
+    { name: 'Desktop', value: 0 },
+    { name: 'Mobile', value: 0 },
+    { name: 'Tablet', value: 0 },
+  ];
+
+  const browserDistribution = analytics?.browserDistribution || [
+    { name: 'Chrome', value: 0 },
+    { name: 'Safari', value: 0 },
+    { name: 'Firefox', value: 0 },
   ];
 
   return (
@@ -307,11 +324,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             </div>
 
             <div className="space-y-2">
-              {(analytics?.deviceDistribution || [
-                { name: 'Desktop', value: 70 },
-                { name: 'Mobile', value: 25 },
-                { name: 'Tablet', value: 5 },
-              ]).map((dev) => (
+              {deviceDistribution.map((dev) => (
                 <div key={dev.name} className="space-y-1">
                   <div className="flex justify-between text-xs text-on-surface font-medium">
                     <span>{dev.name}</span>
@@ -321,7 +334,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                     <div
                       className="h-full bg-primary rounded-full transition-all duration-500"
                       style={{
-                        width: `${Math.min(100, (dev.value / Math.max(1, totalClicks)) * 100 || 33)}%`,
+                        width: totalClicks > 0 ? `${Math.min(100, (dev.value / totalClicks) * 100)}%` : '0%',
                       }}
                     ></div>
                   </div>
@@ -340,11 +353,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             </div>
 
             <div className="space-y-2">
-              {(analytics?.browserDistribution || [
-                { name: 'Chrome', value: 60 },
-                { name: 'Safari', value: 25 },
-                { name: 'Firefox', value: 15 },
-              ]).map((br) => (
+              {browserDistribution.map((br) => (
                 <div key={br.name} className="space-y-1">
                   <div className="flex justify-between text-xs text-on-surface font-medium">
                     <span>{br.name}</span>
@@ -354,7 +363,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                     <div
                       className="h-full bg-indigo-500 rounded-full transition-all duration-500"
                       style={{
-                        width: `${Math.min(100, (br.value / Math.max(1, totalClicks)) * 100 || 25)}%`,
+                        width: totalClicks > 0 ? `${Math.min(100, (br.value / totalClicks) * 100)}%` : '0%',
                       }}
                     ></div>
                   </div>
