@@ -5,6 +5,7 @@ import {
   QrTheme,
   downloadQrStandeePng,
   downloadCleanQrPng,
+  saveOrDownloadFile,
 } from '../utils/qr-poster-generator.util';
 
 interface QrCodeModalProps {
@@ -17,8 +18,14 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ url, onClose }) => {
   const [activeTab, setActiveTab] = useState<'standee' | 'clean'>('standee');
   const [theme, setTheme] = useState<QrTheme>('purple');
   const [downloading, setDownloading] = useState(false);
+  const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
 
   if (!url) return null;
+
+  const showSuccess = (msg: string) => {
+    setDownloadSuccess(msg);
+    setTimeout(() => setDownloadSuccess(null), 3000);
+  };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(url.short_url);
@@ -41,6 +48,7 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ url, onClose }) => {
         },
         `zelnk-standee-${url.short_code}.png`,
       );
+      showSuccess('Standee poster downloaded to your device!');
     } catch (err) {
       console.error('Failed to export standee poster:', err);
     } finally {
@@ -54,6 +62,7 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ url, onClose }) => {
     try {
       setDownloading(true);
       await downloadCleanQrPng(svg, url.short_code, true);
+      showSuccess('Clean QR image downloaded to your device!');
     } catch (err) {
       console.error('Failed to export clean QR:', err);
     } finally {
@@ -61,17 +70,20 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ url, onClose }) => {
     }
   };
 
-  const handleDownloadSvg = () => {
+  const handleDownloadSvg = async () => {
     const svg = document.getElementById('modal-qr-svg') as unknown as SVGElement;
     if (!svg) return;
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const blobUrl = URL.createObjectURL(blob);
-    const downloadLink = document.createElement('a');
-    downloadLink.download = `qr-${url.short_code}.svg`;
-    downloadLink.href = blobUrl;
-    downloadLink.click();
-    URL.revokeObjectURL(blobUrl);
+    try {
+      setDownloading(true);
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const dataUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+      await saveOrDownloadFile(dataUrl, `qr-${url.short_code}.svg`, 'image/svg+xml');
+      showSuccess('SVG vector downloaded to your device!');
+    } catch (err) {
+      console.error('Failed to export SVG:', err);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const themeStyles = {
@@ -332,6 +344,13 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ url, onClose }) => {
               <span>Vector SVG</span>
             </button>
           </div>
+          {/* Download Success Floating Feedback */}
+          {downloadSuccess && (
+            <div className="p-2.5 rounded-xl bg-tertiary-container/20 border border-tertiary/30 text-tertiary text-xs font-semibold flex items-center justify-center gap-2 animate-toast">
+              <span className="material-symbols-outlined text-[18px]">check_circle</span>
+              <span>{downloadSuccess}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

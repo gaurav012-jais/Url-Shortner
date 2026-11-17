@@ -13,6 +13,8 @@
     "@capacitor/app": "^8.1.2",
     "@capacitor/cli": "^8.6.2",
     "@capacitor/core": "^8.6.2",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/share": "^8.0.3",
     "axios": "^1.6.8",
     "canvas-confetti": "^1.9.3",
     "lucide-react": "^0.372.0",

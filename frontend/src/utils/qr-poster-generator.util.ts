@@ -4,6 +4,10 @@
  * onto an off-screen HTML5 Canvas for instant download and sharing.
  */
 
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+
 export type QrTheme = 'purple' | 'dark' | 'ocean' | 'minimal';
 
 export interface QrPosterOptions {
@@ -12,6 +16,57 @@ export interface QrPosterOptions {
   title?: string;
   theme?: QrTheme;
   destinationUrl?: string;
+}
+
+export async function saveOrDownloadFile(
+  dataUrl: string,
+  filename: string,
+  _mimeType: string = 'image/png',
+): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const base64Data = dataUrl.replace(/^data:[^;]+;base64,/, '');
+      let savedUri = '';
+      try {
+        const docResult = await Filesystem.writeFile({
+          path: filename,
+          data: base64Data,
+          directory: Directory.Documents,
+          recursive: true,
+        });
+        savedUri = docResult.uri;
+      } catch {
+        const cacheResult = await Filesystem.writeFile({
+          path: filename,
+          data: base64Data,
+          directory: Directory.Cache,
+          recursive: true,
+        });
+        savedUri = cacheResult.uri;
+      }
+
+      try {
+        await Share.share({
+          title: filename,
+          text: `QR Code: ${filename}`,
+          url: savedUri,
+          dialogTitle: 'Save or Share QR Image',
+        });
+      } catch {
+        // User dismissed share dialog
+      }
+      return;
+    } catch (err) {
+      console.warn('Native filesystem failed, falling back to web download:', err);
+    }
+  }
+
+  const a = document.createElement('a');
+  a.download = filename;
+  a.href = dataUrl;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 function drawRoundedRect(
@@ -412,12 +467,8 @@ export async function downloadQrStandeePng(
 ): Promise<void> {
   const canvas = await generateQrPosterCanvas(svgElement, options);
   const dataUrl = canvas.toDataURL('image/png');
-  const a = document.createElement('a');
-  a.download = filename || `zelnk-standee-${options.shortCode}.png`;
-  a.href = dataUrl;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  const targetName = filename || `zelnk-standee-${options.shortCode}.png`;
+  await saveOrDownloadFile(dataUrl, targetName, 'image/png');
 }
 
 /**
@@ -481,11 +532,6 @@ export async function downloadCleanQrPng(
   }
 
   const dataUrl = canvas.toDataURL('image/png');
-  const a = document.createElement('a');
-  a.download = `qrcode-${shortCode}.png`;
-  a.href = dataUrl;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  await saveOrDownloadFile(dataUrl, `qrcode-${shortCode}.png`, 'image/png');
 }
 

@@ -16,6 +16,7 @@ import { AuthModal } from './components/AuthModal';
 import { AuthGatewayView } from './components/AuthGatewayView';
 import { PullToRefresh } from './components/PullToRefresh';
 import { TopProgressBar } from './components/TopProgressBar';
+import { DeleteConfirmationModal } from './components/DeleteConfirmationModal';
 import { UrlItem, User } from './types';
 import { urlApi, authApi } from './services/api';
 
@@ -29,6 +30,7 @@ export const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedQrUrl, setSelectedQrUrl] = useState<UrlItem | null>(null);
   const [selectedAnalyticsUrl, setSelectedAnalyticsUrl] = useState<UrlItem | null>(null);
+  const [deleteConfirmUrl, setDeleteConfirmUrl] = useState<UrlItem | null>(null);
   const [qrPage, setQrPage] = useState(1);
   const QR_PER_PAGE = 12;
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -72,6 +74,10 @@ export const App: React.FC = () => {
           }
           if (selectedAnalyticsUrl) {
             setSelectedAnalyticsUrl(null);
+            return;
+          }
+          if (deleteConfirmUrl) {
+            setDeleteConfirmUrl(null);
             return;
           }
           if (isMobileNavOpen) {
@@ -190,11 +196,18 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleDeleteUrl = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this route?')) return;
+  const handleDeleteUrl = (id: string) => {
+    const found = urls.find((u) => u.id === id);
+    if (found) {
+      setDeleteConfirmUrl(found);
+    }
+  };
+
+  const handleConfirmDelete = async (id: string) => {
     try {
       await urlApi.deleteUrl(id);
       setUrls((prev) => prev.filter((u) => u.id !== id));
+      setDeleteConfirmUrl(null);
     } catch (err) {
       console.error('Failed to delete route:', err);
     }
@@ -568,6 +581,14 @@ export const App: React.FC = () => {
       <LinkAnalyticsModal
         url={selectedAnalyticsUrl}
         onClose={() => setSelectedAnalyticsUrl(null)}
+      />
+
+      {/* Delete Confirmation Modal Popup */}
+      <DeleteConfirmationModal
+        isOpen={!!deleteConfirmUrl}
+        url={deleteConfirmUrl}
+        onClose={() => setDeleteConfirmUrl(null)}
+        onConfirm={handleConfirmDelete}
       />
 
       {/* Auth Modal (Sign In / Register) */}
