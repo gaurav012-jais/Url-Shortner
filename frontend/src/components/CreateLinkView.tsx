@@ -633,17 +633,14 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
             )}
 
             {/* Primary Route Card */}
-            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm flex flex-col gap-4 border border-outline-variant/30">
+            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm flex flex-col gap-4 border border-outline-variant/30 animate-card-1">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded bg-primary-fixed flex items-center justify-center text-primary">
                     <span className="material-symbols-outlined text-[18px]">alt_route</span>
                   </div>
-                  <h2 className="font-semibold text-sm sm:text-base text-on-surface">Target Endpoint &amp; Custom Alias</h2>
+                  <h2 className="font-semibold text-sm sm:text-base text-on-surface">Link Details</h2>
                 </div>
-                <span className="font-code text-[11px] text-tertiary bg-tertiary-fixed/30 px-2 py-0.5 rounded flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[14px]">bolt</span> 302 Direct
-                </span>
               </div>
 
               {/* Destination URL */}
@@ -1033,21 +1030,21 @@ export const CreateLinkView: React.FC<CreateLinkViewProps> = ({
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-on-primary border-t-transparent rounded-full animate-spin"></div>
-                  <span>Deploying Route to Edge...</span>
+                  <span>Creating Short Link...</span>
                 </>
               ) : (
                 <>
-                  <span className="material-symbols-outlined text-[18px]">bolt</span>
-                  <span>Deploy Short Link Now</span>
+                  <span className="material-symbols-outlined text-[18px]">link</span>
+                  <span>Shorten Link</span>
                 </>
               )}
             </button>
           </form>
 
-          {/* Right Column: Live Telemetry & Vector QR Preview (5 cols) */}
+          {/* Right Column: Live Output Preview (5 cols) */}
           <div className="lg:col-span-5 flex flex-col gap-4 sticky top-20">
             {/* Live Link Card */}
-            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col gap-3">
+            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col gap-3 animate-card-2 hover-lift transition">
               <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20">
                 <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
                   <span className="material-symbols-outlined text-primary text-[16px]">visibility</span>

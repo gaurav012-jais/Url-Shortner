@@ -27,7 +27,7 @@
     'opsz' 24;
 }
 
-/* Subtle scrollbars */
+/* Subtle modern scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -43,11 +43,26 @@
   background: #777585;
 }
 
-/* Premium App Transitions & Micro-interactions */
+/* Premium App Noticeable Transitions & Keyframes */
 @keyframes screenEntrance {
   0% {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(22px) scale(0.99);
+  }
+  60% {
+    opacity: 0.95;
+    transform: translateY(-1px) scale(1.002);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cardFadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
   }
   100% {
     opacity: 1;
@@ -58,7 +73,7 @@
 @keyframes toastSlideUp {
   0% {
     opacity: 0;
-    transform: translate(-50%, 14px) scale(0.96);
+    transform: translate(-50%, 18px) scale(0.94);
   }
   100% {
     opacity: 1;
@@ -66,12 +81,52 @@
   }
 }
 
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(74, 64, 193, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(74, 64, 193, 0);
+  }
+}
+
+@keyframes shimmerWave {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 .animate-screen {
-  animation: screenEntrance 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: screenEntrance 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-card-1 {
+  animation: cardFadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+}
+
+.animate-card-2 {
+  animation: cardFadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+
+.animate-card-3 {
+  animation: cardFadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
+.animate-card-4 {
+  animation: cardFadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }
 
 .animate-toast {
-  animation: toastSlideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: toastSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, rgba(226, 232, 248, 0.4) 25%, rgba(226, 232, 248, 0.85) 50%, rgba(226, 232, 248, 0.4) 75%);
+  background-size: 200% 100%;
+  animation: shimmerWave 1.6s infinite;
 }
 
 /* Premium Desktop Card Hover Elevations */
@@ -80,7 +135,7 @@
     transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
   }
 }

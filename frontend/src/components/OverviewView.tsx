@@ -105,7 +105,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   return (
     <div className="p-3 sm:p-5 lg:p-6 max-w-[1440px] mx-auto w-full flex flex-col gap-3.5 sm:gap-5 animate-screen">
       {/* Top Quick Shortener Bar */}
-      <div className="bg-surface-container-lowest rounded-xl p-2.5 sm:p-3 shadow-sm border border-outline-variant/30">
+      <div className="bg-surface-container-lowest rounded-xl p-2.5 sm:p-3 shadow-sm border border-outline-variant/30 animate-card-1">
         <form onSubmit={handleQuickShorten} className="flex flex-col md:flex-row items-center gap-2">
           <div className="hidden sm:flex items-center pl-2 text-outline pointer-events-none">
             <span className="material-symbols-outlined text-[20px] text-primary">link</span>
@@ -155,7 +155,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       {/* 4-Grid KPI Stats: 2x2 on Mobile, 4-col on Desktop */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Stat 1: Total Links */}
-        <div className="bg-surface-container-lowest rounded-xl p-3 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between active:scale-[0.99] hover-lift transition">
+        <div className="bg-surface-container-lowest rounded-xl p-3 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between active:scale-[0.99] hover-lift transition animate-card-1">
           <div className="flex items-center justify-between text-on-surface-variant">
             <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">
               Total Links
@@ -175,7 +175,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         </div>
 
         {/* Stat 2: Total Clicks */}
-        <div className="bg-surface-container-lowest rounded-xl p-3 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between active:scale-[0.99] hover-lift transition">
+        <div className="bg-surface-container-lowest rounded-xl p-3 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between active:scale-[0.99] hover-lift transition animate-card-2">
           <div className="flex items-center justify-between text-on-surface-variant">
             <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">
               Total Clicks
@@ -195,7 +195,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         </div>
 
         {/* Stat 3: Active Ratio */}
-        <div className="bg-surface-container-lowest rounded-xl p-3 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between active:scale-[0.99] hover-lift transition">
+        <div className="bg-surface-container-lowest rounded-xl p-3 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between active:scale-[0.99] hover-lift transition animate-card-3">
           <div className="flex items-center justify-between text-on-surface-variant">
             <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">
               Active Ratio
@@ -217,7 +217,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         </div>
 
         {/* Stat 4: Avg Clicks */}
-        <div className="bg-surface-container-lowest rounded-xl p-3 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between active:scale-[0.99] hover-lift transition">
+        <div className="bg-surface-container-lowest rounded-xl p-3 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between active:scale-[0.99] hover-lift transition animate-card-4">
           <div className="flex items-center justify-between text-on-surface-variant">
             <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider">
               Avg Clicks
@@ -240,7 +240,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       {/* Main Telemetry Area (Chart + Device Distribution) */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-6 items-start">
         {/* Telemetry Chart (8 cols) */}
-        <div className="xl:col-span-8 bg-surface-container-lowest rounded-xl p-3.5 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between">
+        <div className="xl:col-span-8 bg-surface-container-lowest rounded-xl p-3.5 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col justify-between animate-card-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-outline-variant/20">
             <div>
               <h2 className="font-semibold text-xs sm:text-sm text-on-surface">Click Analytics</h2>
@@ -303,7 +303,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         </div>
 
         {/* Device & Browser Distribution (4 cols) */}
-        <div className="xl:col-span-4 bg-surface-container-lowest rounded-xl p-3.5 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col gap-4">
+        <div className="xl:col-span-4 bg-surface-container-lowest rounded-xl p-3.5 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col gap-4 animate-card-3">
           <div>
             <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20 mb-2.5">
               <span className="text-xs font-semibold text-on-surface flex items-center gap-1.5">
@@ -363,7 +363,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       </div>
 
       {/* Recent Links */}
-      <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm p-3.5 sm:p-5 flex flex-col gap-3">
+      <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm p-3.5 sm:p-5 flex flex-col gap-3 animate-card-4">
         <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-primary text-[18px]">history</span>

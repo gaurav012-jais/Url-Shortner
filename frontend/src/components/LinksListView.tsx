@@ -96,25 +96,9 @@ export const LinksListView: React.FC<LinksListViewProps> = ({
   };
 
   return (
-    <div className="p-3 sm:p-5 lg:p-6 max-w-[1440px] mx-auto w-full flex flex-col gap-3.5 sm:gap-5">
-      {/* Telemetry Edge Banner */}
-      <div className="px-3 sm:px-4 py-2 rounded-lg bg-surface-container-low border border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px] sm:text-xs text-on-surface-variant font-code">
-        <div className="flex items-center gap-2 truncate">
-          <span className="flex items-center gap-1 text-primary font-medium truncate">
-            <span className="material-symbols-outlined text-[15px]">bolt</span>
-            Routing Edge: Local Engine
-          </span>
-          <span>/</span>
-          <span className="text-on-surface font-semibold truncate">PostgreSQL Mesh</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-tertiary font-semibold shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
-          <span>100% Operational</span>
-        </div>
-      </div>
-
+    <div className="p-3 sm:p-5 lg:p-6 max-w-[1440px] mx-auto w-full flex flex-col gap-3.5 sm:gap-5 animate-screen">
       {/* Header Block */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-card-1">
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-on-surface tracking-tight">
@@ -125,7 +109,7 @@ export const LinksListView: React.FC<LinksListViewProps> = ({
             </span>
           </div>
           <p className="text-[11px] sm:text-xs text-on-surface-variant">
-            Manage custom routing rules, monitor click telemetry, and toggle active endpoints.
+            Manage your shortened links, view click performance, and copy or share URLs.
           </p>
         </div>
 
@@ -209,7 +193,7 @@ export const LinksListView: React.FC<LinksListViewProps> = ({
           {/* ============================================================== */}
           {/* 1. MOBILE LINK CARDS VIEW (< 768px): Purpose-built for phones */}
           {/* ============================================================== */}
-          <div className="md:hidden flex flex-col gap-3">
+          <div className="md:hidden flex flex-col gap-3 animate-card-2">
             {paginatedUrls.map((item) => {
               const isInactive = !item.is_active || item.is_expired;
 
@@ -400,7 +384,7 @@ export const LinksListView: React.FC<LinksListViewProps> = ({
           {/* ============================================================== */}
           {/* 2. DESKTOP / TABLET TABLE VIEW (≥ 768px): Structured wide table */}
           {/* ============================================================== */}
-          <div className="hidden md:block bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden">
+          <div className="hidden md:block bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden animate-card-2">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>

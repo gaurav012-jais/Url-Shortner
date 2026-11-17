@@ -15,6 +15,7 @@ import { SubscriptionView } from './components/SubscriptionView';
 import { AuthModal } from './components/AuthModal';
 import { AuthGatewayView } from './components/AuthGatewayView';
 import { PullToRefresh } from './components/PullToRefresh';
+import { TopProgressBar } from './components/TopProgressBar';
 import { UrlItem, User } from './types';
 import { urlApi, authApi } from './services/api';
 
@@ -231,6 +232,9 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background font-body text-on-surface antialiased flex flex-col">
+      {/* Top Ambient Loading & Slow Network Progress Bar */}
+      <TopProgressBar loading={loading} />
+
       {/* Mobile Drawer Overlay Backdrop */}
       {isMobileNavOpen && (
         <div

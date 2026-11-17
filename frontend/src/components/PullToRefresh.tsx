@@ -13,13 +13,13 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
 }) => {
   const [pullY, setPullY] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [justUpdated, setJustUpdated] = useState(false);
   const startYRef = useRef(0);
   const isPullingRef = useRef(false);
   const THRESHOLD = 64;
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (disabled || refreshing) return;
-    // Only allow pull-down if user is at the top of the page
     if (window.scrollY <= 0) {
       startYRef.current = e.touches[0].clientY;
       isPullingRef.current = true;
@@ -32,7 +32,6 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
     const diff = currentY - startYRef.current;
 
     if (diff > 0 && window.scrollY <= 0) {
-      // Apply elastic damping
       const damped = Math.min(diff * 0.42, 85);
       setPullY(damped);
     } else {
@@ -50,13 +49,15 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
       setPullY(THRESHOLD);
       try {
         await Promise.resolve(onRefresh());
+        setJustUpdated(true);
       } catch (err) {
         console.error('Pull-to-refresh error:', err);
       } finally {
         setTimeout(() => {
           setRefreshing(false);
+          setJustUpdated(false);
           setPullY(0);
-        }, 400);
+        }, 600);
       }
     } else {
       setPullY(0);
@@ -78,8 +79,13 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
           opacity: pullY > 10 ? 1 : 0,
         }}
       >
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-high/90 text-on-surface shadow-sm border border-outline-variant/30 text-xs font-medium">
-          {refreshing ? (
+        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container-high/95 text-on-surface shadow-md border border-outline-variant/30 text-xs font-medium">
+          {justUpdated ? (
+            <>
+              <span className="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
+              <span className="text-tertiary font-semibold">Updated!</span>
+            </>
+          ) : refreshing ? (
             <>
               <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               <span>Refreshing...</span>

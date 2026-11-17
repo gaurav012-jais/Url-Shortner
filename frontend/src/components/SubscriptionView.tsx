@@ -402,15 +402,16 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
 
       {/* Plan Cards Grid - ALWAYS DISPLAYS 3 CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 w-full max-w-6xl mx-auto">
-        {plans.map((plan) => {
+        {plans.map((plan, idx) => {
           const isCurrent = currentPlanId === plan.id;
           const price = billingCycle === 'yearly' ? plan.priceYearly : plan.priceMonthly;
           const period = billingCycle === 'yearly' ? '/yr' : '/mo';
+          const animClass = idx === 0 ? 'animate-card-1' : idx === 1 ? 'animate-card-2' : 'animate-card-3';
 
           return (
             <div
               key={plan.id}
-              className={`relative rounded-3xl p-5 sm:p-7 flex flex-col justify-between transition-all duration-300 ${
+              className={`relative rounded-3xl p-5 sm:p-7 flex flex-col justify-between transition-all duration-300 hover-lift ${animClass} ${
                 plan.popular
                   ? 'bg-surface-container-low border-2 border-primary shadow-xl shadow-primary/10 ring-1 ring-primary/20 scale-[1.01] sm:scale-[1.02]'
                   : 'bg-surface-container-lowest border border-outline-variant/30 hover:border-outline-variant shadow-sm'
@@ -509,8 +510,8 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
         })}
       </div>
 
-      {/* Feature Breakdown & System Quotas */}
-      <div className="w-full max-w-6xl mx-auto mt-8 sm:mt-12 bg-surface-container-low rounded-3xl border border-outline-variant/30 p-4 sm:p-8 space-y-5 shadow-sm">
+      {/* Feature Comparison */}
+      <div className="w-full max-w-6xl mx-auto mt-8 sm:mt-12 bg-surface-container-low rounded-3xl border border-outline-variant/30 p-4 sm:p-8 space-y-5 shadow-sm animate-card-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-outline-variant/20 pb-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
